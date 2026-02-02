@@ -93,7 +93,12 @@ function aplicarPermissoes() {
 // 2. NAVEGAÇÃO
 // ============================================================================
 
-function switchTab(tabId) {
+/**
+ * Função switchTab atualizada:
+ * Adicionado parâmetro 'shouldReset' (padrão true).
+ * Se for false, não limpa o formulário ao trocar de aba (usado na edição).
+ */
+function switchTab(tabId, shouldReset = true) {
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     const views = [
@@ -112,8 +117,11 @@ function switchTab(tabId) {
     const target = document.getElementById('view-' + tabId);
     if(target) target.classList.remove('hidden');
     
-    if (tabId === 'form-paciente') resetFormPaciente();
-    if (tabId === 'form-atendimento') resetFormAtendimento();
+    // Só reseta se shouldReset for true
+    if (shouldReset) {
+        if (tabId === 'form-paciente') resetFormPaciente();
+        if (tabId === 'form-atendimento') resetFormAtendimento();
+    }
     
     if (tabId === 'lista-pacientes') {
         const listaVisible = !document.getElementById('subview-pacientes-lista').classList.contains('hidden');
@@ -714,7 +722,8 @@ function mostrarFormularioPaciente(isEdit, dados = null) {
 }
 
 function abrirEdicaoDireta(cpf, id) {
-    switchTab('form-paciente');
+    // Passa false para NÃO resetar o formulário automaticamente, pois vamos popular
+    switchTab('form-paciente', false);
     const inputCpf = document.getElementById('paciente_cpf_check');
     const cpfStr = cpf ? String(cpf) : '';
     inputCpf.value = cpfStr;
@@ -727,7 +736,8 @@ function abrirEdicaoDireta(cpf, id) {
 }
 
 function abrirEdicaoAtendimento(at) {
-    switchTab('form-atendimento');
+    // CORREÇÃO CRÍTICA: Passa false para NÃO resetar o formulário
+    switchTab('form-atendimento', false);
     
     // ATIVA MODO DE EDIÇÃO (Esconde lista e botões de lote)
     toggleModoEdicao(true);
@@ -768,13 +778,15 @@ function abrirEdicaoAtendimento(at) {
 }
 
 function abrirEdicaoAtendimentoId(id) {
-    const at = todosAtendimentos.find(x => x.id === id);
+    // CORREÇÃO CRÍTICA: Converte para String para garantir comparação correta
+    const at = todosAtendimentos.find(x => String(x.id) === String(id));
     if(at) abrirEdicaoAtendimento(at);
 }
 
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
-    switchTab('form-atendimento');
+    // Aqui usamos o reset padrão (true) pois é um NOVO atendimento para um paciente existente
+    switchTab('form-atendimento'); 
     document.getElementById('busca_cpf').value = cpf;
     if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
 }
