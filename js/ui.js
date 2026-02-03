@@ -462,14 +462,14 @@ async function submitAtendimento(e) {
         listaProcedimentosTemp = []; 
         renderizarTabelaProcedimentos(); // Atualiza a tabela visualmente para vazia
 
-        // 2. Reseta o formulário
+        // 2. Reseta o formulário (ISSO AGORA LIMPA CPF E NOME OCULTOS)
         if(typeof resetFormAtendimento === 'function') resetFormAtendimento(); 
         
         // 3. Foca no campo de busca para o próximo paciente (Fluxo contínuo)
         setTimeout(() => {
             const buscaEl = document.getElementById('busca_cpf');
             if(buscaEl) {
-                buscaEl.value = ""; // Limpa a busca anterior
+                // buscaEl.value = ""; // Já é limpo no resetFormAtendimento
                 buscaEl.focus(); 
             }
         }, 100);
@@ -670,17 +670,38 @@ function resetFormPaciente() {
 }
 
 function resetFormAtendimento() {
-    document.getElementById('frmAtendimento').reset();
-    document.getElementById('atend_id_hidden').value = "";
-    document.getElementById('titulo_form_atend').innerText = "Novo Atendimento";
-    document.getElementById('txt_btn_atend').innerText = "Salvar Todos os Atendimentos";
-    document.getElementById('resultado_busca').innerText = '';
-    document.getElementById('resto-form-atendimento').classList.add('hidden');
+    const frm = document.getElementById('frmAtendimento');
+    if(frm) frm.reset();
+    
+    const idHidden = document.getElementById('atend_id_hidden');
+    if(idHidden) idHidden.value = "";
+    
+    const titulo = document.getElementById('titulo_form_atend');
+    if(titulo) titulo.innerText = "Novo Atendimento";
+    
+    const btnTxt = document.getElementById('txt_btn_atend');
+    if(btnTxt) btnTxt.innerText = "Salvar Todos os Atendimentos";
+    
+    const resBusca = document.getElementById('resultado_busca');
+    if(resBusca) resBusca.innerText = '';
+    
+    const resto = document.getElementById('resto-form-atendimento');
+    if(resto) resto.classList.add('hidden');
+    
+    // LIMPEZA CRÍTICA: Garante que os dados do paciente anterior sejam removidos
+    const hiddenCpf = document.getElementById('hidden_cpf');
+    const hiddenNome = document.getElementById('hidden_nome');
+    const buscaCpf = document.getElementById('busca_cpf');
+    
+    if(hiddenCpf) hiddenCpf.value = "";
+    if(hiddenNome) hiddenNome.value = "";
+    if(buscaCpf) buscaCpf.value = ""; // Limpa visualmente a busca
     
     const btnDelete = document.getElementById('btn-delete-atendimento');
     if(btnDelete) btnDelete.classList.add('hidden');
     
-    document.getElementById('data_abertura').valueAsDate = new Date();
+    const dataAb = document.getElementById('data_abertura');
+    if(dataAb) dataAb.valueAsDate = new Date();
     
     // Reseta lista temporária
     listaProcedimentosTemp = [];
@@ -694,11 +715,13 @@ function resetFormAtendimento() {
         inpConclusao.onchange = checkStatusConclusao;
     }
     
-    CONFIG_SELECTS.forEach(cfg => {
-        const sel = document.getElementById(`sel_${cfg.id}`);
-        if(sel) sel.value = "";
-        cancelSelectNew(cfg.id);
-    });
+    if(typeof CONFIG_SELECTS !== 'undefined') {
+        CONFIG_SELECTS.forEach(cfg => {
+            const sel = document.getElementById(`sel_${cfg.id}`);
+            if(sel) sel.value = "";
+            cancelSelectNew(cfg.id);
+        });
+    }
 }
 
 function mostrarFormularioPaciente(isEdit, dados = null) {
