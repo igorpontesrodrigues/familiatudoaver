@@ -1023,6 +1023,13 @@ function imprimirRelatorioEleitoral() {
  * Esta função deve ser chamada pelos botões "Imprimir" no formulário e no histórico.
  */
 function imprimirFicha() {
+    // Verificação de Segurança Adicional
+    const btnHist = document.getElementById('btn-imprimir-historico');
+    if (btnHist && btnHist.disabled) {
+        // Se o botão estiver desabilitado, impede a execução mesmo que chamada via console
+        return;
+    }
+
     const printArea = document.getElementById('printable-area');
     if(!printArea) return;
 
@@ -1381,6 +1388,15 @@ function verHistoricoCompleto(p) {
     document.getElementById('hist-cpf').innerText = p.cpf ? `CPF: ${p.cpf}` : 'SEM CPF REGISTRADO';
     document.getElementById('hist-tel').innerText = `Tel: ${p.tel || '-'}`;
     
+    // BLOQUEIO DO BOTÃO DE IMPRESSÃO
+    const btnPrint = document.getElementById('btn-imprimir-historico');
+    if(btnPrint) {
+        btnPrint.disabled = true;
+        btnPrint.classList.add('opacity-50', 'cursor-not-allowed');
+        // Mantém ícone mas muda texto
+        btnPrint.innerHTML = '<i class="animate-spin mr-2" data-lucide="loader-2"></i> Carregando...';
+    }
+
     const divDetalhes = document.getElementById('hist-detalhes');
     divDetalhes.innerHTML = '<div class="col-span-3 text-center text-blue-500"><i class="animate-spin inline-block mr-2" data-lucide="loader-2"></i> Carregando dados completos...</div>';
     
@@ -1434,6 +1450,13 @@ function verHistoricoCompleto(p) {
                     .then(jsonHist => {
                         const history = jsonHist.data || [];
                         window.historicoAtualCache = history; // Salva para impressão
+
+                        // REABILITA O BOTÃO APÓS CARREGAR TUDO
+                        if(btnPrint) {
+                            btnPrint.disabled = false;
+                            btnPrint.classList.remove('opacity-50', 'cursor-not-allowed');
+                            btnPrint.innerHTML = '<i data-lucide="printer" class="w-4 h-4 mr-2"></i> Imprimir';
+                        }
 
                         if(history.length === 0) {
                             timeline.innerHTML = '<p class="text-slate-400 pl-4">Nenhum atendimento registrado.</p>';
@@ -1519,6 +1542,9 @@ function verHistoricoCompleto(p) {
     } catch(e) {
         divDetalhes.innerHTML = '<div class="col-span-3 text-red-500">Erro ao carregar detalhes do munícipe.</div>';
         timeline.innerHTML = '<p class="text-red-500 pl-4">Erro ao carregar histórico.</p>';
+        if(btnPrint) {
+             btnPrint.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i> Erro';
+        }
         console.error(e);
     }
 }
