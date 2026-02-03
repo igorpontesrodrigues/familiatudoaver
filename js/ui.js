@@ -454,7 +454,8 @@ async function submitAtendimento(e) {
 
     if(await sendData('registerServiceBatch', batch, 'loading-atendimento')) { 
         if(typeof resetFormAtendimento === 'function') resetFormAtendimento(); 
-        switchTab('lista-atendimentos');
+        // Em vez de mudar de aba, apenas foca no campo de busca para o próximo
+        document.getElementById('busca_cpf').focus();
     }
 }
 
