@@ -848,10 +848,15 @@ function calcularDataRisco() {
     const dataMarcacao = document.getElementById('field_data_marcacao').value;
     const campoEspec = document.getElementById('field_especialidade');
     if(!dataMarcacao) return;
-    const d = new Date(dataMarcacao);
+
+    // Ajuste para evitar fuso horário que volta um dia
+    const [ano, mes, dia] = dataMarcacao.split('-').map(Number);
+    const d = new Date(ano, mes - 1, dia);
+
     let meses = 3; 
     if(campoEspec && campoEspec.value && campoEspec.value.toUpperCase().includes("OFTALMOLOGIA")) meses = 6;
     d.setMonth(d.getMonth() + meses);
+    
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
