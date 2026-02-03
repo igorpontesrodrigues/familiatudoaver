@@ -493,7 +493,8 @@
             <div class="bg-slate-900 text-white px-6 py-4 border-b border-slate-800 flex justify-between items-center shrink-0">
                 <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="history" class="text-blue-400 w-5 h-5"></i> Histórico do Munícipe</h2>
                 <div class="flex gap-2">
-                    <button onclick="imprimirFicha()" class="text-white hover:text-blue-400 bg-slate-800 border border-slate-700 px-3 py-1 rounded text-sm flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
+                    <!-- ID ADICIONADO AQUI -->
+                    <button id="btn-imprimir-historico" onclick="imprimirFicha()" class="text-white hover:text-blue-400 bg-slate-800 border border-slate-700 px-3 py-1 rounded text-sm flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
                     <!-- BOTÃO EXCLUIR NO HISTÓRICO -->
                     <button id="btn-hist-delete" onclick="confirmarExclusaoPaciente()" class="btn-delete text-red-400 hover:text-white bg-slate-800 hover:bg-red-900 border border-slate-700 px-3 py-1 rounded text-sm flex items-center gap-2 hidden"><i data-lucide="trash-2" class="w-4 h-4"></i> Excluir</button>
                     <button onclick="voltarInicio()" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
