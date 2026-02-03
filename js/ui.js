@@ -791,27 +791,6 @@ function abrirAtendimentoDireto(cpf, id) {
     if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
 }
 
-async function buscarPacienteParaAtendimento() {
-    const termo = document.getElementById('busca_cpf').value;
-    const resDiv = document.getElementById('resultado_busca');
-    if(termo.length < 3) return; 
-    
-    resDiv.innerText = "Buscando..."; 
-    document.getElementById('resto-form-atendimento').classList.add('hidden');
-    
-    try {
-        const res = await fetch(`${SCRIPT_URL}?action=findPatient&busca=${encodeURIComponent(termo)}&tipo=cpf`);
-        const json = await res.json();
-        if(json.found) {
-            resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${json.nome}</span>`;
-            document.getElementById('hidden_cpf').value = json.cpf || '';
-            document.getElementById('hidden_nome').value = json.nome;
-            document.getElementById('resto-form-atendimento').classList.remove('hidden');
-        } else resDiv.innerHTML = `<span class="text-red-500 font-medium">Munícipe não encontrado.</span>`;
-        if(typeof lucide !== 'undefined') lucide.createIcons();
-    } catch(e) { resDiv.innerText = "Erro na busca."; }
-}
-
 async function submitPaciente(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target).entries());
@@ -1016,6 +995,159 @@ function imprimirRelatorioEleitoral() {
     html += `</tbody></table>
         <div style="margin-top: 20px; font-size: 10px; text-align: right; color: #999;">Sistema de Gestão Interna</div>
     </div>`;
+
+    printArea.innerHTML = html;
+    window.print();
+}
+
+/**
+ * Função para imprimir a Ficha do Munícipe (Preenchida)
+ * Esta função deve ser chamada pelos botões "Imprimir" no formulário e no histórico.
+ */
+function imprimirFicha() {
+    const printArea = document.getElementById('printable-area');
+    if(!printArea) return;
+
+    let p = pacienteAtual;
+    
+    // Se estiver na visualização de histórico, usa o objeto de histórico (prioridade)
+    const viewHist = document.getElementById('view-historico-paciente');
+    if (!viewHist.classList.contains('hidden') && typeof histPacienteAtual !== 'undefined' && histPacienteAtual) {
+        p = histPacienteAtual;
+    }
+
+    // Se ainda não tiver paciente (ex: impressão direta do formulário de cadastro antes de verificar ID), tenta pegar dos inputs
+    if(!p) {
+        const nomeInput = document.getElementById('field_nome');
+        if(nomeInput && nomeInput.value) {
+            p = {
+                nome: nomeInput.value,
+                cpf: document.getElementById('paciente_cpf_check').value,
+                rg: document.getElementById('field_rg').value,
+                nascimento: document.getElementById('field_nascimento').value,
+                tel: document.getElementById('field_tel1').value,
+                tel2: document.getElementById('field_tel2').value,
+                cep: document.getElementById('field_cep').value,
+                logradouro: document.getElementById('field_logradouro').value,
+                bairro: document.getElementById('field_bairro') ? document.getElementById('field_bairro').value : '',
+                municipio: document.getElementById('field_municipio') ? document.getElementById('field_municipio').value : '',
+                referencia: document.getElementById('field_referencia').value || document.getElementById('field_apelido').value,
+                status_titulo: document.getElementById('field_status_titulo') ? document.getElementById('field_status_titulo').value : '',
+                zona: document.getElementById('field_zona').value,
+                secao: document.getElementById('field_secao').value,
+                lideranca: document.getElementById('field_lideranca') ? document.getElementById('field_lideranca').value : '',
+                indicacao: document.getElementById('field_indicacao') ? document.getElementById('field_indicacao').value : '',
+                obs: document.getElementById('field_obs').value
+            };
+        }
+    }
+
+    if(!p) {
+        alert("Nenhum munícipe selecionado para impressão.");
+        return;
+    }
+
+    // Estilos inline (mesmos da ficha em branco para consistência)
+    const styleLabel = "display: block; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;";
+    const styleValue = "border-bottom: 1px solid #333; min-height: 20px; width: 100%; margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #000; padding-bottom: 2px;";
+    const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px;";
+    const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
+
+    const safe = (val) => val || '-';
+
+    const html = `
+        <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; max-width: 100%;">
+            
+            <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Ficha Cadastral</h1>
+                <p style="margin: 2px 0 0; color: #555; font-size: 12px;">Gabinete Família Tudo a Ver</p>
+            </div>
+
+            <div style="${styleSection}">
+                <h2 style="${styleTitle}">DADOS DO MUNÍCIPE</h2>
+                
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 3;">
+                        <span style="${styleLabel}">Nome Completo</span>
+                        <div style="${styleValue}">${safe(p.nome)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">CPF</span>
+                        <div style="${styleValue}">${safe(p.cpf)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Data Nasc.</span>
+                        <div style="${styleValue}">${p.nascimento ? p.nascimento.split('-').reverse().join('/') : '-'}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">RG</span>
+                        <div style="${styleValue}">${safe(p.rg)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Telefone 1</span>
+                        <div style="${styleValue}">${safe(p.tel || p.tel1)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Telefone 2</span>
+                        <div style="${styleValue}">${safe(p.tel2)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">CEP</span>
+                        <div style="${styleValue}">${safe(p.cep)}</div>
+                    </div>
+                    <div style="flex: 3;">
+                        <span style="${styleLabel}">Endereço</span>
+                        <div style="${styleValue}">${safe(p.logradouro)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Bairro</span>
+                        <div style="${styleValue}">${safe(p.bairro)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Município</span>
+                        <div style="${styleValue}">${safe(p.municipio)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Referência</span>
+                        <div style="${styleValue}">${safe(p.apelido || p.referencia)}</div>
+                    </div>
+                </div>
+                
+                 <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Situação Eleitoral</span>
+                        <div style="${styleValue}">${safe(p.status_titulo)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Zona / Seção</span>
+                        <div style="${styleValue}">${safe(p.zona)} / ${safe(p.secao)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Liderança / Indicação</span>
+                        <div style="${styleValue}">${safe(p.lideranca || p.indicacao)}</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <span style="${styleLabel}">Observações</span>
+                    <div style="${styleValue} height: auto; min-height: 40px;">${safe(p.obs)}</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px;">
+                Impresso em ${new Date().toLocaleString('pt-BR')} - Sistema de Gestão Interna
+            </div>
+        </div>
+    `;
 
     printArea.innerHTML = html;
     window.print();
