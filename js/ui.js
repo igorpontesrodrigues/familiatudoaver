@@ -403,7 +403,7 @@ function checkStatusConclusao() {
 }
 
 async function submitAtendimento(e) {
-    if(e) e.preventDefault(); // Garante que não recarrega a página
+    if(e) e.preventDefault(); 
     const id = document.getElementById('atend_id_hidden').value;
 
     // --- MODO EDIÇÃO (Single) ---
@@ -446,16 +446,33 @@ async function submitAtendimento(e) {
 
     if(!cpf && !nome) { alert("Busque o munícipe."); return; }
 
-    const batch = listaProcedimentosTemp.map(item => ({
-        ...item,
-        cpf_paciente: cpf,
-        nome_paciente: nome
-    }));
+    // Limpeza de dados para evitar erros de payload
+    const batch = listaProcedimentosTemp.map(item => {
+        // Remove tempId e garante que todos os campos existam para evitar undefined
+        const { tempId, ...cleanItem } = item;
+        return {
+            ...cleanItem,
+            cpf_paciente: cpf,
+            nome_paciente: nome
+        };
+    });
 
     if(await sendData('registerServiceBatch', batch, 'loading-atendimento')) { 
+        // 1. LIMPEZA EXPLÍCITA IMEDIATA PARA EVITAR DUPLICIDADE
+        listaProcedimentosTemp = []; 
+        renderizarTabelaProcedimentos(); // Atualiza a tabela visualmente para vazia
+
+        // 2. Reseta o formulário
         if(typeof resetFormAtendimento === 'function') resetFormAtendimento(); 
-        // Em vez de mudar de aba, apenas foca no campo de busca para o próximo
-        document.getElementById('busca_cpf').focus();
+        
+        // 3. Foca no campo de busca para o próximo paciente (Fluxo contínuo)
+        setTimeout(() => {
+            const buscaEl = document.getElementById('busca_cpf');
+            if(buscaEl) {
+                buscaEl.value = ""; // Limpa a busca anterior
+                buscaEl.focus(); 
+            }
+        }, 100);
     }
 }
 
