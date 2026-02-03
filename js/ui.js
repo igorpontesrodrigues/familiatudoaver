@@ -1053,8 +1053,53 @@ function imprimirFicha() {
     const styleValue = "border-bottom: 1px solid #333; min-height: 20px; width: 100%; margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #000; padding-bottom: 2px;";
     const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px;";
     const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
+    // Estilos da Tabela de Histórico
+    const styleTable = "width: 100%; border-collapse: collapse; font-size: 10px;";
+    const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase;";
+    const styleTd = "border-bottom: 1px solid #eee; padding: 4px;";
 
     const safe = (val) => val || '-';
+
+    // Gera o HTML do Histórico se houver dados em cache
+    let historyHtml = '';
+    if (window.historicoAtualCache && window.historicoAtualCache.length > 0) {
+        historyHtml += `
+            <div style="${styleSection}">
+                <h2 style="${styleTitle}">HISTÓRICO DE ATENDIMENTOS</h2>
+                <table style="${styleTable}">
+                    <thead>
+                        <tr>
+                            <th style="${styleTh} width: 80px;">Data</th>
+                            <th style="${styleTh}">Serviço / Especialidade</th>
+                            <th style="${styleTh}">Local</th>
+                            <th style="${styleTh} width: 80px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        window.historicoAtualCache.forEach(h => {
+            const dataFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
+            const servico = `${h.tipo_servico || ''} ${h.especialidade || h.procedimento || ''}`.trim();
+            historyHtml += `
+                <tr>
+                    <td style="${styleTd}">${dataFmt}</td>
+                    <td style="${styleTd}">
+                        <strong>${servico}</strong><br>
+                        <span style="color: #666;">${h.obs_atendimento || ''}</span>
+                    </td>
+                    <td style="${styleTd}">${h.local || '-'}</td>
+                    <td style="${styleTd}">${h.status || '-'}</td>
+                </tr>
+            `;
+        });
+
+        historyHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
 
     const html = `
         <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; max-width: 100%;">
@@ -1143,6 +1188,8 @@ function imprimirFicha() {
                     <div style="${styleValue} height: auto; min-height: 40px;">${safe(p.obs)}</div>
                 </div>
             </div>
+
+            ${historyHtml}
             
             <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px;">
                 Impresso em ${new Date().toLocaleString('pt-BR')} - Sistema de Gestão Interna
