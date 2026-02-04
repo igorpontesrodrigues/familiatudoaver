@@ -639,22 +639,33 @@
                         <div class="p-6 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm">
                             <h3 class="form-section-title text-emerald-700 border-emerald-200">Adicionar Procedimentos</h3>
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                                <!-- LINHA 1: Data, Local e Prontuário (Condicional) -->
                                 <div class="md:col-span-3"><label class="label-field">Data Abertura</label><input type="date" id="data_abertura" class="input-field"></div>
-                                <!-- Prontuário Adicionado -->
-                                <div class="md:col-span-3"><label class="label-field">Nº Prontuário</label><input type="text" id="field_prontuario" class="input-field"></div>
+                                
+                                <!-- LOCAL MOVIDO PARA CÁ (Antes do Prontuário) -->
+                                <div class="md:col-span-5" id="container_local"></div>
+                                
+                                <!-- PRONTUÁRIO MOVIDO PARA CÁ (Depende do Local) -->
+                                <div class="md:col-span-4">
+                                    <label class="label-field">Nº Prontuário <span class="text-[10px] font-normal text-slate-400">(Apenas HO)</span></label>
+                                    <input type="text" id="field_prontuario" class="input-field bg-slate-100 cursor-not-allowed" disabled placeholder="Selecione Local HO...">
+                                </div>
+
+                                <!-- LINHA 2: Categoria, Especialidade -->
                                 <div class="md:col-span-6" id="container_tipo_servico"></div>
+                                <div class="md:col-span-6" id="container_especialidade"></div>
                                 
-                                <div class="md:col-span-4" id="container_parceiro"></div>
-                                <div class="md:col-span-4" id="container_especialidade"></div>
-                                <div class="md:col-span-4" id="container_procedimento"></div>
+                                <!-- LINHA 3: Procedimento, Parceiro -->
+                                <div class="md:col-span-6" id="container_procedimento"></div>
+                                <div class="md:col-span-6" id="container_parceiro"></div>
                                 
-                                <div class="md:col-span-4" id="container_local"></div>
-                                <div class="md:col-span-4" id="container_tipo"></div>
-                                <div class="md:col-span-4"><label class="label-field">Valor (R$)</label><input type="number" step="0.01" id="field_valor" class="input-field" placeholder="0,00"></div>
+                                <!-- LINHA 4: Detalhes Específicos -->
+                                <div class="md:col-span-6" id="container_tipo"></div>
+                                <div class="md:col-span-6"><label class="label-field">Valor (R$)</label><input type="number" step="0.01" id="field_valor" class="input-field" placeholder="0,00"></div>
                                 
+                                <!-- LINHA 5: Datas e Status -->
                                 <div class="md:col-span-3"><label class="label-field">Data Marcação</label><input type="date" id="field_data_marcacao" onchange="calcularDataRisco()" class="input-field"></div>
                                 <div class="md:col-span-3"><label class="label-field">Data Risco (Auto)</label><input type="date" id="field_data_risco" class="input-field bg-slate-50"></div>
-                                <!-- Data Conclusão Adicionada -->
                                 <div class="md:col-span-3"><label class="label-field">Data Conclusão</label><input type="date" id="field_data_conclusao" class="input-field"></div>
                                 <div class="md:col-span-3" id="container_status_atendimento"></div>
                                 
