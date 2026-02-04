@@ -75,10 +75,9 @@ document.addEventListener('change', function(e) {
 });
 
 // ============================================================================
-// SOBRESCRITA DE CORREÇÃO (PATCH)
+// SOBRESCRITA DE CORREÇÃO (PATCH - NOVO ATENDIMENTO)
 // ============================================================================
-// Esta função substitui a do ui.js para garantir que o fluxo de Novo Atendimento 
-// funcione corretamente sem ser apagado pelo reset do formulário.
+// Sobrescreve a função do ui.js para garantir o fluxo correto de preenchimento.
 
 window.abrirAtendimentoDireto = function(cpf, id) {
     if(!cpf || cpf.length < 5) { 
@@ -87,26 +86,27 @@ window.abrirAtendimentoDireto = function(cpf, id) {
         return; 
     }
     
-    // 1. Alterna para a aba SEM resetar automaticamente (false)
+    // 1. Navega para a aba SEM resetar (false) para não perdermos o controle
     if(typeof switchTab === 'function') switchTab('form-atendimento', false);
     
-    // 2. Limpeza Manual dos campos (sem apagar o CPF que vamos inserir)
-    const frm = document.getElementById('frmAtendimento');
-    if(frm) {
-        // Limpa tudo EXCETO o campo de busca
-        const inputs = frm.querySelectorAll('input:not(#busca_cpf), textarea, select');
-        inputs.forEach(inp => {
-            if(inp.type !== 'button' && inp.type !== 'submit' && inp.type !== 'hidden') inp.value = '';
-        });
-        document.getElementById('atend_id_hidden').value = '';
-    }
+    // 2. LIMPEZA MANUAL FORÇADA
+    // Limpa todos os campos EXCETO o de busca
+    const inputs = document.querySelectorAll('#frmAtendimento input:not(#busca_cpf), #frmAtendimento select, #frmAtendimento textarea');
+    inputs.forEach(inp => {
+        if(inp.type !== 'button' && inp.type !== 'submit' && inp.type !== 'hidden') {
+            inp.value = '';
+        }
+    });
     
-    // Limpa lista de procedimentos anteriores
+    // Limpa IDs ocultos e estados
+    const hiddenId = document.getElementById('atend_id_hidden');
+    if(hiddenId) hiddenId.value = '';
+    
     if(typeof listaProcedimentosTemp !== 'undefined') listaProcedimentosTemp = [];
     const tbody = document.getElementById('lista-procedimentos-temp');
     if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-slate-400 italic">Nenhum item adicionado.</td></tr>';
 
-    // Reseta selects customizados
+    // Reseta selects especiais
     if(typeof CONFIG_SELECTS !== 'undefined') {
         CONFIG_SELECTS.forEach(cfg => {
             const sel = document.getElementById(`sel_${cfg.id}`);
@@ -115,55 +115,58 @@ window.abrirAtendimentoDireto = function(cpf, id) {
         });
     }
 
-    // Restaura interface para modo "Novo"
+    // Garante que a interface esteja em modo "Novo"
     if(typeof toggleModoEdicao === 'function') toggleModoEdicao(false);
     
-    // Esconde o formulário principal até confirmarmos o paciente
-    document.getElementById('resto-form-atendimento').classList.add('hidden');
+    // Esconde o formulário até confirmarmos o munícipe
+    const restoForm = document.getElementById('resto-form-atendimento');
+    if(restoForm) restoForm.classList.add('hidden');
+    
     const resDiv = document.getElementById('resultado_busca');
-    if(resDiv) resDiv.innerHTML = ''; // Limpa resultado anterior
+    if(resDiv) resDiv.innerHTML = '';
 
-    // 3. PREENCHIMENTO E BUSCA (Com pequeno delay para garantir UI pronta)
-    setTimeout(() => {
-        // Preenche o campo de busca
-        const inputBusca = document.getElementById('busca_cpf');
-        if(inputBusca) {
-            inputBusca.value = cpf;
-            inputBusca.focus(); // Foca para garantir
-        }
+    // 3. INSERÇÃO DO CPF E BUSCA (Síncrono e Garantido)
+    const inputBusca = document.getElementById('busca_cpf');
+    if(inputBusca) {
+        inputBusca.value = cpf; // Insere o valor
+        inputBusca.dispatchEvent(new Event('input')); // Dispara evento para garantir que a UI reconheça
+    }
 
-        // Tenta encontrar na memória (todosPacientes)
-        let paciente = null;
-        if (typeof todosPacientes !== 'undefined' && Array.isArray(todosPacientes)) {
-            const cpfLimpo = String(cpf).replace(/\D/g, '');
-            paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
-                       todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
-        }
+    // Tenta achar na memória local (todosPacientes)
+    let paciente = null;
+    if (typeof todosPacientes !== 'undefined' && Array.isArray(todosPacientes)) {
+        const cpfLimpo = String(cpf).replace(/\D/g, '');
+        // Busca por ID ou CPF
+        paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
+                   todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
+    }
 
-        if (paciente) {
-            // Encontrou na memória: Preenche direto
-            const hiddenCpf = document.getElementById('hidden_cpf');
-            const hiddenNome = document.getElementById('hidden_nome');
-            
-            if(resDiv) resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
-            if(hiddenCpf) hiddenCpf.value = paciente.cpf || cpf;
-            if(hiddenNome) hiddenNome.value = paciente.nome;
-            
-            document.getElementById('resto-form-atendimento').classList.remove('hidden');
-            
-            // Define data de hoje e foca
-            const dataAb = document.getElementById('data_abertura');
-            if(dataAb) {
-                dataAb.valueAsDate = new Date();
-                setTimeout(() => dataAb.focus(), 50);
-            }
-        } else {
-            // Não encontrou: Força a busca na API
-            if(typeof buscarPacienteParaAtendimento === 'function') {
-                buscarPacienteParaAtendimento();
-            }
+    if (paciente) {
+        // --- CENÁRIO 1: Munícipe encontrado na memória ---
+        if(resDiv) resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
+        
+        document.getElementById('hidden_cpf').value = paciente.cpf || cpf;
+        document.getElementById('hidden_nome').value = paciente.nome;
+        
+        if(restoForm) restoForm.classList.remove('hidden');
+        
+        // Define data atual
+        const dataAb = document.getElementById('data_abertura');
+        if(dataAb) {
+            dataAb.valueAsDate = new Date();
+            // Pequeno delay apenas para o foco, não para os dados
+            setTimeout(() => dataAb.focus(), 50);
         }
         
-        if(typeof lucide !== 'undefined') lucide.createIcons();
-    }, 150); // Delay aumentado para 150ms para garantir execução após renderização da aba
+    } else {
+        // --- CENÁRIO 2: Munícipe não está na lista local -> Buscar na API ---
+        if(resDiv) resDiv.innerHTML = '<span class="text-slate-500 text-xs">Buscando...</span>';
+        
+        // Chama a função de busca original que lerá o valor que acabamos de colocar no input
+        if(typeof buscarPacienteParaAtendimento === 'function') {
+            buscarPacienteParaAtendimento();
+        }
+    }
+    
+    if(typeof lucide !== 'undefined') lucide.createIcons();
 };
