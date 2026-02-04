@@ -59,17 +59,27 @@ async function sendData(action, data, loadingId) {
     }
 }
 
+// VALORES PADRÃO HARDCODED (Para garantir que apareçam mesmo sem planilha)
+const VALORES_PADRAO = {
+    'CATEGORIAS': ['JURIDICO', 'SAUDE', 'SERVIÇO', 'SOCIAL'],
+    'ATENDIMENTO': ['CONSULTA AGENDADA', 'CONSULTA EMERGENCIAL', 'CONSULTA PRÉ OPERATORIA', 'ENCAMINHAMENTOS', 'EXAMES', 'INTERNAÇÃO CIRURGICA', 'ORIENTAÇÕES', 'PROCEDIMENTOS'],
+    'ESPECIALIDADE': ['GINECOLOGIA', 'ORTOPEDISTA', 'CLINICO GERAL', 'PEDIATRA', 'CIRURGIÃO INFANTIL', 'CIRURGIÃO ADULTO', 'IMAGENS'],
+    'PROCEDIMENTO_EXAMES': ['USG', 'TC', 'RNM', 'ECG', 'DOPLLER', 'OFTALMOLÓGICOS'],
+    'TIPOS': ['RNM CRANIO', 'RNM PELVE', 'TC FACE', 'OCT', 'MAPEAMENTO RETINA']
+};
+
 async function carregarFiltros() {
     const safety = setTimeout(() => {
         if(typeof CONFIG_SELECTS !== 'undefined') {
             CONFIG_SELECTS.forEach(cfg => {
                 const sel = document.getElementById(`sel_${cfg.id}`);
                 if(sel && sel.value === "" && sel.options[0].text === "Carregando...") {
-                    sel.innerHTML = '<option value="">(Sem dados)</option><option value="__NEW__" class="text-blue-600 font-bold">+ Cadastrar Novo</option>';
+                    // Se der timeout, carrega pelo menos os padrões
+                    popularSelectComPadroes(sel, cfg.key, []);
                 }
             });
         }
-    }, 3000);
+    }, 5000);
 
     try {
         const response = await fetch(`${SCRIPT_URL}?action=getFilters`);
@@ -78,18 +88,18 @@ async function carregarFiltros() {
 
         if (result.status === 'success') {
             opcoesFiltros = result.data;
+            
             if(typeof CONFIG_SELECTS !== 'undefined') {
                 CONFIG_SELECTS.forEach(cfg => {
-                    const lista = opcoesFiltros[cfg.key];
                     const sel = document.getElementById(`sel_${cfg.id}`);
                     if(!sel) return;
-
-                    sel.innerHTML = '<option value="">Selecione...</option>';
-                    if(lista && Array.isArray(lista) && lista.length > 0) {
-                        [...new Set(lista)].sort().forEach(op => sel.innerHTML += `<option value="${op}">${op}</option>`);
-                    }
-                    sel.innerHTML += '<option value="__NEW__" class="font-bold text-blue-600 border-t">+ Cadastrar Novo</option>';
                     
+                    // Lista vinda da planilha
+                    const listaPlanilha = opcoesFiltros[cfg.key] || [];
+                    
+                    popularSelectComPadroes(sel, cfg.key, listaPlanilha);
+                    
+                    // Restaura valor selecionado se houver (edição)
                     const hiddenVal = document.getElementById(`field_${cfg.id}`).value;
                     if(hiddenVal) {
                         let exists = false;
@@ -109,6 +119,23 @@ async function carregarFiltros() {
             }
         }
     } catch (err) { console.error(err); }
+}
+
+function popularSelectComPadroes(sel, key, listaExtra) {
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    
+    // 1. Pega os padrões definidos no código
+    const padroes = VALORES_PADRAO[key] || [];
+    
+    // 2. Junta com os da planilha (evitando duplicados)
+    const conjuntoUnico = new Set([...padroes, ...listaExtra]);
+    
+    // 3. Ordena e cria as opções
+    Array.from(conjuntoUnico).sort().forEach(op => {
+        if(op) sel.innerHTML += `<option value="${op}">${op}</option>`;
+    });
+    
+    sel.innerHTML += '<option value="__NEW__" class="font-bold text-blue-600 border-t">+ Cadastrar Novo</option>';
 }
 
 // ============================================================================
@@ -319,9 +346,6 @@ async function buscarPacienteParaAtendimento() {
         if(typeof lucide !== 'undefined') lucide.createIcons();
     } catch(e) { resDiv.innerText = "Erro na busca."; }
 }
-
-// A função submitAtendimento foi movida para js/ui.js para garantir que
-// capture os campos corretamente pelo ID. Não está mais duplicada aqui.
 
 // --------------------------------------------------------
 // FUNÇÕES DE LISTAGEM DE ATENDIMENTOS (RESTAURADAS)
