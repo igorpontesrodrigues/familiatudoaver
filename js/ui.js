@@ -1174,9 +1174,9 @@ function imprimirFicha() {
     const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
     // Estilos da Tabela de Histórico
     const styleTable = "width: 100%; border-collapse: collapse; font-size: 10px;";
-    const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase;";
-    const styleTd = "border-bottom: 1px solid #eee; padding: 4px;";
-    const styleTdRight = "border-bottom: 1px solid #eee; padding: 4px; text-align: right;";
+    const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase; font-size: 9px;";
+    const styleTd = "border-bottom: 1px solid #eee; padding: 4px; font-size: 9px;";
+    const styleTdRight = "border-bottom: 1px solid #eee; padding: 4px; text-align: right; font-size: 9px;";
 
     const safe = (val) => val || '-';
     const money = (val) => {
@@ -1195,12 +1195,13 @@ function imprimirFicha() {
                 <table style="${styleTable}">
                     <thead>
                         <tr>
-                            <th style="${styleTh} width: 70px;">Data</th>
-                            <th style="${styleTh}">Categoria / Tipo</th>
-                            <th style="${styleTh}">Esp. / Procedimento</th>
-                            <th style="${styleTh}">Local</th>
-                            <th style="${styleTh}">Detalhes</th>
-                            <th style="${styleTh} text-align: right; width: 80px;">Valor</th>
+                            <th style="${styleTh} width: 60px;">Data</th>
+                            <th style="${styleTh} width: 70px;">Status</th>
+                            <th style="${styleTh}">Classificação</th>
+                            <th style="${styleTh}">Procedimento / Especialidade</th>
+                            <th style="${styleTh}">Local / Prontuário</th>
+                            <th style="${styleTh}">Agendamento</th>
+                            <th style="${styleTh} text-align: right; width: 70px;">Valor</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1208,28 +1209,35 @@ function imprimirFicha() {
         
         window.historicoAtualCache.forEach(h => {
             const dataFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
-            const catTipo = `${h.tipo_servico || ''} ${h.tipo ? `(${h.tipo})` : ''}`.trim();
-            const espProc = `${h.especialidade || ''} ${h.procedimento || ''}`.trim();
+            const catTipo = `${h.tipo_servico || ''}<br><span style="color:#666; font-size:8px">${h.tipo || ''}</span>`;
+            const espProc = `<b>${h.especialidade || ''}</b><br>${h.procedimento || ''}`;
+            const localPront = `<b>${h.local || '-'}</b>${h.prontuario ? `<br>Pront: ${h.prontuario}` : ''}`;
             
+            let agendamento = '-';
+            if (h.data_marcacao) agendamento = `Marc: ${h.data_marcacao.split('-').reverse().join('/')}`;
+            if (h.data_conclusao) agendamento += `<br>Conc: ${h.data_conclusao.split('-').reverse().join('/')}`;
+
             const valorFloat = parseFloat(h.valor) || 0;
             totalGeral += valorFloat;
 
             historyHtml += `
                 <tr>
                     <td style="${styleTd}">${dataFmt}</td>
-                    <td style="${styleTd}">${catTipo || '-'}</td>
-                    <td style="${styleTd}">${espProc || '-'}</td>
-                    <td style="${styleTd}">${h.local || '-'}</td>
-                    <td style="${styleTd}">${h.obs_atendimento || '-'}</td>
+                    <td style="${styleTd}"><b>${h.status || '-'}</b></td>
+                    <td style="${styleTd}">${catTipo}</td>
+                    <td style="${styleTd}">${espProc}</td>
+                    <td style="${styleTd}">${localPront}</td>
+                    <td style="${styleTd}">${agendamento}</td>
                     <td style="${styleTdRight}">${money(valorFloat)}</td>
                 </tr>
+                ${h.obs_atendimento ? `<tr><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc;">Obs: ${h.obs_atendimento}</td></tr>` : ''}
             `;
         });
 
         // Linha de Total
         historyHtml += `
                 <tr style="background-color: #f8fafc; font-weight: bold;">
-                    <td colspan="5" style="padding: 8px; text-align: right; border-top: 2px solid #333;">TOTAL GERAL:</td>
+                    <td colspan="6" style="padding: 8px; text-align: right; border-top: 2px solid #333;">TOTAL GERAL:</td>
                     <td style="padding: 8px; text-align: right; border-top: 2px solid #333; color: #2563eb;">${money(totalGeral)}</td>
                 </tr>
         `;
