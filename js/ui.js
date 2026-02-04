@@ -865,18 +865,24 @@ function abrirEdicaoAtendimentoId(id) {
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
     
+    // 1. Alterna para a aba SEM resetar automaticamente (para termos controle manual)
+    switchTab('form-atendimento', false);
+    
+    // 2. Reseta o formulário explicitamente (limpa dados anteriores)
+    resetFormAtendimento();
+
+    // 3. Preenche o campo de busca com o CPF recebido (GARANTIDO após o reset)
+    const inputBusca = document.getElementById('busca_cpf');
+    if(inputBusca) {
+        inputBusca.value = cpf; 
+    }
+
     // Tenta achar o paciente na memória local para evitar delay de rede
     let paciente = null;
     if (typeof todosPacientes !== 'undefined') {
         paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
                    todosPacientes.find(p => String(p.cpf) === String(cpf));
     }
-
-    // Aqui usamos o reset padrão (true) pois é um NOVO atendimento
-    switchTab('form-atendimento'); 
-    
-    const inputBusca = document.getElementById('busca_cpf');
-    if(inputBusca) inputBusca.value = cpf || (paciente ? paciente.cpf : '');
 
     if (paciente) {
         // Preenchimento imediato (Simula sucesso da busca)
