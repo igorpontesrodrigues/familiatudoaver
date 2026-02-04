@@ -194,11 +194,6 @@ function abrirDetalheAtendimento(at) {
     innerModal.classList.remove('hidden');
     backdrop.classList.remove('hidden');
 
-    // Associa o objeto ao botão de imprimir para uso posterior
-    const btnPrint = document.createElement('button');
-    btnPrint.id = 'btn-imprimir-guia'; // ID único para evitar duplicação ou referência
-    // ... mas como vamos reinserir os botões dinamicamente abaixo, ok.
-
     document.getElementById('det-paciente').innerText = at.nome_paciente || at.nome || '-';
     document.getElementById('det-cpf').innerText = `CPF: ${at.cpf_paciente || at.cpf || '-'}`;
     document.getElementById('det-status').innerText = at.status || 'PENDENTE';
@@ -219,15 +214,11 @@ function abrirDetalheAtendimento(at) {
     document.getElementById('det-risco').innerText = at.data_risco ? at.data_risco.split('-').reverse().join('/') : '-';
     document.getElementById('det-obs').innerText = at.obs_atendimento || 'Sem observações.';
 
-    // Área de botões no rodapé do modal
+    // Área de botões no rodapé do modal - REMOVIDO BOTÃO GUIA
     const footerModal = document.querySelector('#view-detalhe-atendimento .border-t');
     if (footerModal) {
-        // Recria os botões para garantir estado limpo e adicionar o de impressão
         footerModal.innerHTML = `
             <div class="flex justify-end gap-3 w-full">
-                <button onclick="imprimirGuiaAtendimento(window['at_${at.id}'] || window['at_temp_guia'])" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-2" title="Imprimir Guia">
-                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Guia
-                </button>
                 <button onclick="fecharDetalhe()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">Fechar</button>
                 <button id="btn-editar-detalhe" class="btn-action px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-md flex items-center gap-2">
                     <i data-lucide="edit-3" class="w-4 h-4"></i> Editar Atendimento
@@ -235,10 +226,6 @@ function abrirDetalheAtendimento(at) {
             </div>
         `;
         
-        // Armazena objeto temporário para impressão caso o ID global falhe
-        window['at_temp_guia'] = at;
-
-        // Reatribui evento de editar
         const btnEdit = document.getElementById('btn-editar-detalhe');
         if(currentUserRole === 'VISITOR') {
             btnEdit.classList.add('hidden');
@@ -1189,22 +1176,31 @@ function imprimirFicha() {
     const styleTable = "width: 100%; border-collapse: collapse; font-size: 10px;";
     const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase;";
     const styleTd = "border-bottom: 1px solid #eee; padding: 4px;";
+    const styleTdRight = "border-bottom: 1px solid #eee; padding: 4px; text-align: right;";
 
     const safe = (val) => val || '-';
+    const money = (val) => {
+        if(!val) return 'R$ 0,00';
+        return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
 
     // Gera o HTML do Histórico se houver dados em cache
     let historyHtml = '';
     if (window.historicoAtualCache && window.historicoAtualCache.length > 0) {
+        let totalGeral = 0;
+
         historyHtml += `
             <div style="${styleSection}">
                 <h2 style="${styleTitle}">HISTÓRICO DE ATENDIMENTOS</h2>
                 <table style="${styleTable}">
                     <thead>
                         <tr>
-                            <th style="${styleTh} width: 80px;">Data</th>
-                            <th style="${styleTh}">Serviço / Especialidade</th>
+                            <th style="${styleTh} width: 70px;">Data</th>
+                            <th style="${styleTh}">Categoria / Tipo</th>
+                            <th style="${styleTh}">Esp. / Procedimento</th>
                             <th style="${styleTh}">Local</th>
-                            <th style="${styleTh} width: 80px;">Status</th>
+                            <th style="${styleTh}">Detalhes</th>
+                            <th style="${styleTh} text-align: right; width: 80px;">Valor</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1212,19 +1208,31 @@ function imprimirFicha() {
         
         window.historicoAtualCache.forEach(h => {
             const dataFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
-            const servico = `${h.tipo_servico || ''} ${h.especialidade || h.procedimento || ''}`.trim();
+            const catTipo = `${h.tipo_servico || ''} ${h.tipo ? `(${h.tipo})` : ''}`.trim();
+            const espProc = `${h.especialidade || ''} ${h.procedimento || ''}`.trim();
+            
+            const valorFloat = parseFloat(h.valor) || 0;
+            totalGeral += valorFloat;
+
             historyHtml += `
                 <tr>
                     <td style="${styleTd}">${dataFmt}</td>
-                    <td style="${styleTd}">
-                        <strong>${servico}</strong><br>
-                        <span style="color: #666;">${h.obs_atendimento || ''}</span>
-                    </td>
+                    <td style="${styleTd}">${catTipo || '-'}</td>
+                    <td style="${styleTd}">${espProc || '-'}</td>
                     <td style="${styleTd}">${h.local || '-'}</td>
-                    <td style="${styleTd}">${h.status || '-'}</td>
+                    <td style="${styleTd}">${h.obs_atendimento || '-'}</td>
+                    <td style="${styleTdRight}">${money(valorFloat)}</td>
                 </tr>
             `;
         });
+
+        // Linha de Total
+        historyHtml += `
+                <tr style="background-color: #f8fafc; font-weight: bold;">
+                    <td colspan="5" style="padding: 8px; text-align: right; border-top: 2px solid #333;">TOTAL GERAL:</td>
+                    <td style="padding: 8px; text-align: right; border-top: 2px solid #333; color: #2563eb;">${money(totalGeral)}</td>
+                </tr>
+        `;
 
         historyHtml += `
                     </tbody>
@@ -1336,119 +1344,6 @@ function imprimirFicha() {
             
             <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px;">
                 Impresso em ${new Date().toLocaleString('pt-BR')} - Sistema de Gestão Interna
-            </div>
-        </div>
-    `;
-
-    printArea.innerHTML = html;
-    window.print();
-}
-
-/**
- * Função para imprimir GUIA DE ATENDIMENTO ÚNICO (Comprovante)
- */
-function imprimirGuiaAtendimento(at) {
-    if (!at) return;
-    const printArea = document.getElementById('printable-area');
-    if(!printArea) return;
-
-    // Estilos
-    const styleLabel = "display: block; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;";
-    const styleValue = "border-bottom: 1px solid #333; min-height: 20px; width: 100%; margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #000; padding-bottom: 2px;";
-    const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px;";
-    const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
-    
-    const safe = (val) => val || '-';
-    const money = (val) => {
-        if(!val) return 'R$ 0,00';
-        return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    };
-
-    const dataFmt = at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-';
-    
-    const html = `
-        <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; max-width: 100%;">
-            
-            <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
-                <h1 style="margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Guia de Atendimento</h1>
-                <p style="margin: 2px 0 0; color: #555; font-size: 12px;">Protocolo: ${at.id || 'N/A'}</p>
-            </div>
-
-            <!-- DADOS MUNÍCIPE -->
-            <div style="${styleSection}">
-                <h2 style="${styleTitle}">MUNÍCIPE</h2>
-                <div style="display: flex; gap: 15px;">
-                    <div style="flex: 3;">
-                        <span style="${styleLabel}">Nome</span>
-                        <div style="${styleValue}">${safe(at.nome_paciente || at.nome)}</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">CPF</span>
-                        <div style="${styleValue}">${safe(at.cpf_paciente || at.cpf)}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DADOS DO SERVIÇO -->
-            <div style="${styleSection}">
-                <h2 style="${styleTitle}">DETALHES DO PROCEDIMENTO</h2>
-                
-                <div style="display: flex; gap: 15px;">
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Data Solicitação</span>
-                        <div style="${styleValue}">${dataFmt}</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Categoria</span>
-                        <div style="${styleValue}">${safe(at.tipo_servico)}</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Tipo Atendimento</span>
-                        <div style="${styleValue}">${safe(at.tipo)}</div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 15px;">
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Especialidade</span>
-                        <div style="${styleValue}">${safe(at.especialidade)}</div>
-                    </div>
-                    <div style="flex: 2;">
-                        <span style="${styleLabel}">Procedimento / Exame</span>
-                        <div style="${styleValue}">${safe(at.procedimento)}</div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 15px;">
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Local</span>
-                        <div style="${styleValue}">${safe(at.local)}</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Médico / Parceiro</span>
-                        <div style="${styleValue}">${safe(at.parceiro)}</div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 15px; margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 4px;">
-                    <div style="flex: 1;">
-                        <span style="${styleLabel}">Valor Processo</span>
-                        <div style="${styleValue} border: none; font-size: 18px;">${money(at.valor)}</div>
-                    </div>
-                    <div style="flex: 1; text-align: right;">
-                        <span style="${styleLabel}">Total</span>
-                        <div style="${styleValue} border: none; font-size: 18px; color: #2563eb;">${money(at.valor)}</div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 10px;">
-                    <span style="${styleLabel}">Observações</span>
-                    <div style="${styleValue} height: auto; min-height: 40px; font-weight: normal;">${safe(at.obs_atendimento)}</div>
-                </div>
-            </div>
-
-            <div style="text-align: center; font-size: 10px; color: #888; margin-top: 40px;">
-                Gabinete Família Tudo a Ver - Emissão: ${new Date().toLocaleString('pt-BR')}
             </div>
         </div>
     `;
