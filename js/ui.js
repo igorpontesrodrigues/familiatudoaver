@@ -865,47 +865,61 @@ function abrirEdicaoAtendimentoId(id) {
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
     
-    // 1. Alterna para a aba SEM resetar automaticamente (para termos controle manual)
+    // 1. Alterna para a aba SEM resetar automaticamente
     switchTab('form-atendimento', false);
     
-    // 2. Reseta o formulário explicitamente (limpa dados anteriores)
+    // 2. Reseta o formulário explicitamente PARA LIMPAR DADOS ANTERIORES
     resetFormAtendimento();
 
-    // Tenta achar o paciente na memória local para evitar delay de rede
-    let paciente = null;
-    if (typeof todosPacientes !== 'undefined') {
-        paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
-                   todosPacientes.find(p => String(p.cpf) === String(cpf));
+    // 3. Define o valor do input IMEDIATAMENTE após o reset
+    const inputBusca = document.getElementById('busca_cpf');
+    if(inputBusca) {
+        inputBusca.value = cpf; 
     }
 
-    // 3. Aplica o CPF com um pequeno delay para garantir que o reset visual já ocorreu
-    setTimeout(() => {
-        const inputBusca = document.getElementById('busca_cpf');
-        if(inputBusca) {
-            inputBusca.value = cpf; 
+    // Tenta achar o paciente na memória local (todosPacientes)
+    let paciente = null;
+    if (typeof todosPacientes !== 'undefined' && Array.isArray(todosPacientes)) {
+        // Normaliza CPF para comparação (apenas números)
+        const cpfLimpo = String(cpf).replace(/\D/g, '');
+        
+        // Tenta por ID primeiro
+        paciente = todosPacientes.find(p => String(p.id) === String(id));
+        
+        // Se não achou, tenta por CPF
+        if (!paciente && cpfLimpo.length > 0) {
+            paciente = todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
         }
+    }
 
-        if (paciente) {
-            // Preenchimento imediato (Simula sucesso da busca)
-            const resDiv = document.getElementById('resultado_busca');
-            if(resDiv) {
-                resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
-            }
-            
-            document.getElementById('hidden_cpf').value = paciente.cpf || '';
-            document.getElementById('hidden_nome').value = paciente.nome;
-            document.getElementById('resto-form-atendimento').classList.remove('hidden');
-            
-            // Foca no primeiro campo útil
-            const dataInput = document.getElementById('data_abertura');
-            if(dataInput) dataInput.focus();
-            
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        } else {
-            // Fallback se não achar na memória
-            if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
+    if (paciente) {
+        // CASO 1: Paciente encontrado na memória -> Preenche direto
+        const resDiv = document.getElementById('resultado_busca');
+        if(resDiv) {
+            resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
         }
-    }, 50); // Delay curto de 50ms
+        
+        document.getElementById('hidden_cpf').value = paciente.cpf || cpf;
+        document.getElementById('hidden_nome').value = paciente.nome;
+        document.getElementById('resto-form-atendimento').classList.remove('hidden');
+        
+        // Foca no campo de data para agilizar
+        setTimeout(() => {
+             const dataInput = document.getElementById('data_abertura');
+             if(dataInput) dataInput.focus();
+        }, 100);
+        
+    } else {
+        // CASO 2: Paciente não está na lista local -> Dispara busca na API
+        // Usamos setTimeout para garantir que a UI atualizou e a função de busca pegará o valor correto do input
+        setTimeout(() => {
+            if(typeof buscarPacienteParaAtendimento === 'function') {
+                buscarPacienteParaAtendimento();
+            }
+        }, 200);
+    }
+    
+    if(typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function submitPaciente(e) {
