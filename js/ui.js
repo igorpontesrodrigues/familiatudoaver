@@ -871,12 +871,6 @@ function abrirAtendimentoDireto(cpf, id) {
     // 2. Reseta o formulário explicitamente (limpa dados anteriores)
     resetFormAtendimento();
 
-    // 3. Preenche o campo de busca com o CPF recebido (GARANTIDO após o reset)
-    const inputBusca = document.getElementById('busca_cpf');
-    if(inputBusca) {
-        inputBusca.value = cpf; 
-    }
-
     // Tenta achar o paciente na memória local para evitar delay de rede
     let paciente = null;
     if (typeof todosPacientes !== 'undefined') {
@@ -884,24 +878,34 @@ function abrirAtendimentoDireto(cpf, id) {
                    todosPacientes.find(p => String(p.cpf) === String(cpf));
     }
 
-    if (paciente) {
-        // Preenchimento imediato (Simula sucesso da busca)
-        const resDiv = document.getElementById('resultado_busca');
-        resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
-        
-        document.getElementById('hidden_cpf').value = paciente.cpf || '';
-        document.getElementById('hidden_nome').value = paciente.nome;
-        document.getElementById('resto-form-atendimento').classList.remove('hidden');
-        
-        // Foca no primeiro campo útil
-        setTimeout(() => {
-             const dataInput = document.getElementById('data_abertura');
-             if(dataInput) dataInput.focus();
-        }, 100);
-    } else {
-        // Fallback se não achar na memória (ex: acesso direto sem carregar lista)
-        if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
-    }
+    // 3. Aplica o CPF com um pequeno delay para garantir que o reset visual já ocorreu
+    setTimeout(() => {
+        const inputBusca = document.getElementById('busca_cpf');
+        if(inputBusca) {
+            inputBusca.value = cpf; 
+        }
+
+        if (paciente) {
+            // Preenchimento imediato (Simula sucesso da busca)
+            const resDiv = document.getElementById('resultado_busca');
+            if(resDiv) {
+                resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
+            }
+            
+            document.getElementById('hidden_cpf').value = paciente.cpf || '';
+            document.getElementById('hidden_nome').value = paciente.nome;
+            document.getElementById('resto-form-atendimento').classList.remove('hidden');
+            
+            // Foca no primeiro campo útil
+            const dataInput = document.getElementById('data_abertura');
+            if(dataInput) dataInput.focus();
+            
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        } else {
+            // Fallback se não achar na memória
+            if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
+        }
+    }, 50); // Delay curto de 50ms
 }
 
 async function submitPaciente(e) {
