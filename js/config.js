@@ -20,13 +20,26 @@ const CONFIG_SELECTS = [
     { id: 'status_titulo', label: 'Situação do Título', container: 'container_status_titulo', key: 'STATUS_TITULO' },
     { id: 'indicacao', label: 'Indicação (Liderança)', container: 'container_indicacao', key: 'INDICACAO' }, 
 
-    // Formulário Atendimento
-    { id: 'tipo_servico', label: 'Tipo Serviço', container: 'container_tipo_servico', key: 'TIPO_SERVICO' },
-    { id: 'parceiro', label: 'Parceiro/Médico', container: 'container_parceiro', key: 'PARCEIRO' },
+    // Formulário Atendimento - REORGANIZADO CONFORME SOLICITAÇÃO
+    // Ordem visual sugerida: Categorias > Atendimento > Especialidade > Procedimento > Tipos > Parceiro > Status
+    
+    // 1. CATEGORIAS (Antigo Tipo Serviço)
+    { id: 'tipo_servico', label: 'Categorias', container: 'container_tipo_servico', key: 'CATEGORIAS' },
+    
+    // 2. ATENDIMENTO (Antigo Sub-Tipo/Detalhe - Trocado ordem visual via UI ou apenas renomeado aqui, mantendo container original)
+    { id: 'tipo', label: 'Atendimento', container: 'container_tipo', key: 'ATENDIMENTO' },
+    
+    // 3. ESPECIALIDADE
     { id: 'especialidade', label: 'Especialidade', container: 'container_especialidade', key: 'ESPECIALIDADE' },
-    { id: 'procedimento', label: 'Procedimento', container: 'container_procedimento', key: 'PROCEDIMENTO' },
-    { id: 'local', label: 'Local de Atendimento', container: 'container_local', key: 'LOCAL' },
-    { id: 'tipo', label: 'Sub-Tipo / Detalhe', container: 'container_tipo', key: 'TIPO' },
+    
+    // 4. PROCEDIMENTO/EXAMES
+    { id: 'procedimento', label: 'Procedimento/Exames', container: 'container_procedimento', key: 'PROCEDIMENTO_EXAMES' },
+    
+    // 5. TIPOS (Antigo Local - Repaproveitando o campo para salvar essa info específica)
+    { id: 'local', label: 'Tipos (Detalhe)', container: 'container_local', key: 'TIPOS' },
+
+    // Extras
+    { id: 'parceiro', label: 'Parceiro/Médico', container: 'container_parceiro', key: 'PARCEIRO' },
     { id: 'status_atendimento', label: 'Status Inicial', container: 'container_status_atendimento', key: 'STATUS_ATENDIMENTO', nameOverride: 'status' }
 ];
 
