@@ -20,10 +20,6 @@ window.onload = function() {
 
     // 4. Busca as opções do Google Sheets para preencher os selects
     if(typeof carregarFiltros === 'function') carregarFiltros();
-
-    // NOTA: Não chamamos switchTab('dashboard') aqui.
-    // O sistema inicia com a tela de login (index.html) sobreposta a tudo.
-    // A função iniciarSistema() no js/ui.js será chamada após o login bem-sucedido.
 };
 
 
@@ -43,13 +39,35 @@ document.addEventListener('input', function(e) {
     }
 });
 
-// 2. Monitora mudanças em campos que afetam a Data de Risco
-// Se mudar a especialidade (Ex: Oftalmologia) ou a data de marcação, recalcula o prazo.
+// 2. Monitora mudanças globais (Data Risco e Regra do Prontuário)
 document.addEventListener('change', function(e) {
-    const idsMonitorados = ['sel_especialidade', 'inp_especialidade', 'field_data_marcacao'];
-    
-    if(idsMonitorados.includes(e.target.id)) {
-        // Pequeno delay para garantir que o valor do select já tenha ido para o hidden field
+    const targetId = e.target.id;
+
+    // A. Regra do Prontuário (Só habilita se Local == HO)
+    if (targetId === 'sel_local' || targetId === 'inp_local') {
+        const prontuarioInput = document.getElementById('field_prontuario');
+        // Pega o valor do select ou do input de novo cadastro
+        const valorLocal = e.target.value ? e.target.value.toUpperCase() : '';
+        
+        // Verifica se é HO (no select ou digitado manualmente)
+        if (valorLocal === 'HO') {
+            prontuarioInput.disabled = false;
+            prontuarioInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+            prontuarioInput.classList.add('bg-white');
+            prontuarioInput.placeholder = "Digite o número...";
+            prontuarioInput.focus();
+        } else {
+            prontuarioInput.disabled = true;
+            prontuarioInput.value = ''; // Limpa se mudar para outro local
+            prontuarioInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+            prontuarioInput.classList.remove('bg-white');
+            prontuarioInput.placeholder = "Apenas para Local HO";
+        }
+    }
+
+    // B. Cálculo de Data de Risco
+    const idsRisco = ['sel_especialidade', 'inp_especialidade', 'field_data_marcacao'];
+    if(idsRisco.includes(targetId)) {
         if(typeof calcularDataRisco === 'function') {
             setTimeout(calcularDataRisco, 100);
         }
