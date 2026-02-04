@@ -350,7 +350,7 @@ function adicionarProcedimentoNaLista() {
     // Limpa campos do card
     ['field_especialidade', 'field_procedimento', 'field_local', 'field_tipo', 
      'field_valor', 'field_data_marcacao', 'field_data_risco', 'field_data_conclusao', 
-     'field_obs_atendimento'].forEach(id => {
+     'field_obs_atendimento', 'field_prontuario'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = '';
     });
@@ -690,37 +690,46 @@ function resetFormPaciente() {
 function resetFormAtendimento(preserveSearch = false) {
     const frm = document.getElementById('frmAtendimento');
     
+    // Se não for para preservar a busca, faz o reset total padrão
     if (!preserveSearch) {
-        // Reset Total (comportamento padrão)
         if(frm) frm.reset();
         document.getElementById('resultado_busca').innerText = '';
         
         // Limpa campos ocultos e visuais de paciente
-        const hiddenCpf = document.getElementById('hidden_cpf');
-        const hiddenNome = document.getElementById('hidden_nome');
-        const buscaCpf = document.getElementById('busca_cpf');
-        
-        if(hiddenCpf) hiddenCpf.value = "";
-        if(hiddenNome) hiddenNome.value = "";
-        if(buscaCpf) buscaCpf.value = ""; 
+        document.getElementById('hidden_cpf').value = "";
+        document.getElementById('hidden_nome').value = "";
+        document.getElementById('busca_cpf').value = ""; 
         
         // Esconde formulário
         document.getElementById('resto-form-atendimento').classList.add('hidden');
     } else {
-        // Reset Parcial (Mantém busca)
-        // Limpa inputs exceto o de busca
-        if(frm) {
-            const inputs = frm.querySelectorAll('input:not(#busca_cpf), textarea, select');
-            inputs.forEach(inp => {
-                if(inp.type !== 'button' && inp.type !== 'submit' && inp.type !== 'hidden') {
-                    inp.value = '';
-                }
+        // Reset Parcial: Limpa APENAS os campos do formulário de procedimentos
+        // Mantendo o cabeçalho do paciente (search e hidden inputs) intactos
+        
+        // Limpa lista temporária
+        listaProcedimentosTemp = [];
+        renderizarTabelaProcedimentos();
+        
+        // Limpa campos específicos do "card" de adicionar procedimento
+        const inputsToClear = document.querySelectorAll('#resto-form-atendimento input, #resto-form-atendimento select, #resto-form-atendimento textarea');
+        inputsToClear.forEach(el => {
+            if (el.type !== 'hidden' && el.type !== 'button') {
+                el.value = '';
+            }
+        });
+
+        // Reseta selects customizados
+        if(typeof CONFIG_SELECTS !== 'undefined') {
+            CONFIG_SELECTS.forEach(cfg => {
+                const sel = document.getElementById(`sel_${cfg.id}`);
+                if(sel) sel.value = "";
+                if(typeof cancelSelectNew === 'function') cancelSelectNew(cfg.id);
             });
         }
     }
     
-    const idHidden = document.getElementById('atend_id_hidden');
-    if(idHidden) idHidden.value = "";
+    // Reset de campos comuns
+    document.getElementById('atend_id_hidden').value = "";
     
     const titulo = document.getElementById('titulo_form_atend');
     if(titulo) titulo.innerText = "Novo Atendimento";
@@ -734,10 +743,6 @@ function resetFormAtendimento(preserveSearch = false) {
     const dataAb = document.getElementById('data_abertura');
     if(dataAb) dataAb.valueAsDate = new Date();
     
-    // Reseta lista temporária
-    listaProcedimentosTemp = [];
-    renderizarTabelaProcedimentos();
-
     // RESTAURA MODO PADRÃO (NOVO)
     toggleModoEdicao(false);
 
@@ -754,14 +759,6 @@ function resetFormAtendimento(preserveSearch = false) {
     const inpConclusao = document.getElementById('field_data_conclusao');
     if(inpConclusao) {
         inpConclusao.onchange = checkStatusConclusao;
-    }
-    
-    if(typeof CONFIG_SELECTS !== 'undefined') {
-        CONFIG_SELECTS.forEach(cfg => {
-            const sel = document.getElementById(`sel_${cfg.id}`);
-            if(sel) sel.value = "";
-            cancelSelectNew(cfg.id);
-        });
     }
 }
 
@@ -821,6 +818,9 @@ function abrirEdicaoAtendimento(at) {
     // CORREÇÃO CRÍTICA: Passa false para NÃO resetar o formulário
     switchTab('form-atendimento', false);
     
+    // Reset TOTAL pois estamos carregando um atendimento existente completo
+    resetFormAtendimento(false);
+
     // ATIVA MODO DE EDIÇÃO (Esconde lista e botões de lote)
     toggleModoEdicao(true);
 
@@ -890,10 +890,9 @@ function abrirAtendimentoDireto(cpf, id) {
     // 1. Alterna para a aba SEM resetar automaticamente (false)
     switchTab('form-atendimento', false);
     
-    // 2. Chama o reset em modo "preserveSearch" = true
-    // Isso limpa a lista e os campos, mas NÃO o input de busca ou os hiddens do paciente
-    // MAS espere, queremos forçar um NOVO paciente, então melhor resetar tudo e DEPOIS preencher.
-    resetFormAtendimento(); 
+    // 2. Chama o reset em modo "preserveSearch" = false (Reset Total)
+    // Para garantir que não haja lixo de outros atendimentos.
+    resetFormAtendimento(false);
 
     // 3. Preenchimento DO CAMPO DE BUSCA (Explicitamente após o reset)
     const inputBusca = document.getElementById('busca_cpf');
