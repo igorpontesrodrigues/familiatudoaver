@@ -350,7 +350,7 @@ function adicionarProcedimentoNaLista() {
     // Limpa campos do card
     ['field_especialidade', 'field_procedimento', 'field_local', 'field_tipo', 
      'field_valor', 'field_data_marcacao', 'field_data_risco', 'field_data_conclusao', 
-     'field_obs_atendimento'].forEach(id => {
+     'field_obs_atendimento', 'field_prontuario'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = '';
     });
@@ -865,17 +865,17 @@ function abrirEdicaoAtendimentoId(id) {
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
     
-    // 1. Alterna para a aba SEM resetar
+    // 1. Alterna para a aba SEM resetar automaticamente
     switchTab('form-atendimento', false);
     
     // 2. EM VEZ DE USAR resetFormAtendimento(), LIMPA MANUALMENTE APENAS O NECESSÁRIO
-    // Isso evita que o formulário todo seja limpo e conflite com os dados que vamos inserir
+    // Isso evita que o formulário todo seja limpo (especificamente busca_cpf) e conflite com os dados que vamos inserir
     
     // Limpa a lista temporária de procedimentos (começa do zero)
     listaProcedimentosTemp = [];
     renderizarTabelaProcedimentos();
     
-    // Limpa os campos do "card" de adicionar procedimento
+    // Limpa apenas os campos do "card" de adicionar procedimento, NÃO o campo de busca
     ['field_especialidade', 'field_procedimento', 'field_local', 'field_tipo', 
      'field_valor', 'field_data_marcacao', 'field_data_risco', 'field_data_conclusao', 
      'field_obs_atendimento', 'field_prontuario'].forEach(fid => {
