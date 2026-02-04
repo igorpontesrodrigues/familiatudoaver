@@ -214,7 +214,7 @@ function abrirDetalheAtendimento(at) {
     document.getElementById('det-risco').innerText = at.data_risco ? at.data_risco.split('-').reverse().join('/') : '-';
     document.getElementById('det-obs').innerText = at.obs_atendimento || 'Sem observações.';
 
-    // Área de botões no rodapé do modal - REMOVIDO BOTÃO GUIA
+    // Área de botões no rodapé do modal
     const footerModal = document.querySelector('#view-detalhe-atendimento .border-t');
     if (footerModal) {
         footerModal.innerHTML = `
@@ -350,7 +350,7 @@ function adicionarProcedimentoNaLista() {
     // Limpa campos do card
     ['field_especialidade', 'field_procedimento', 'field_local', 'field_tipo', 
      'field_valor', 'field_data_marcacao', 'field_data_risco', 'field_data_conclusao', 
-     'field_obs_atendimento', 'field_prontuario'].forEach(id => {
+     'field_obs_atendimento'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = '';
     });
@@ -682,9 +682,42 @@ function resetFormPaciente() {
     });
 }
 
-function resetFormAtendimento() {
+/**
+ * Função resetFormAtendimento atualizada:
+ * Aceita parâmetro opcional 'preserveSearch' para manter os dados de busca/paciente
+ * enquanto limpa o restante do formulário.
+ */
+function resetFormAtendimento(preserveSearch = false) {
     const frm = document.getElementById('frmAtendimento');
-    if(frm) frm.reset();
+    
+    if (!preserveSearch) {
+        // Reset Total (comportamento padrão)
+        if(frm) frm.reset();
+        document.getElementById('resultado_busca').innerText = '';
+        
+        // Limpa campos ocultos e visuais de paciente
+        const hiddenCpf = document.getElementById('hidden_cpf');
+        const hiddenNome = document.getElementById('hidden_nome');
+        const buscaCpf = document.getElementById('busca_cpf');
+        
+        if(hiddenCpf) hiddenCpf.value = "";
+        if(hiddenNome) hiddenNome.value = "";
+        if(buscaCpf) buscaCpf.value = ""; 
+        
+        // Esconde formulário
+        document.getElementById('resto-form-atendimento').classList.add('hidden');
+    } else {
+        // Reset Parcial (Mantém busca)
+        // Limpa inputs exceto o de busca
+        if(frm) {
+            const inputs = frm.querySelectorAll('input:not(#busca_cpf), textarea, select');
+            inputs.forEach(inp => {
+                if(inp.type !== 'button' && inp.type !== 'submit' && inp.type !== 'hidden') {
+                    inp.value = '';
+                }
+            });
+        }
+    }
     
     const idHidden = document.getElementById('atend_id_hidden');
     if(idHidden) idHidden.value = "";
@@ -694,21 +727,6 @@ function resetFormAtendimento() {
     
     const btnTxt = document.getElementById('txt_btn_atend');
     if(btnTxt) btnTxt.innerText = "Salvar Todos os Atendimentos";
-    
-    const resBusca = document.getElementById('resultado_busca');
-    if(resBusca) resBusca.innerText = '';
-    
-    const resto = document.getElementById('resto-form-atendimento');
-    if(resto) resto.classList.add('hidden');
-    
-    // LIMPEZA CRÍTICA: Garante que os dados do paciente anterior sejam removidos
-    const hiddenCpf = document.getElementById('hidden_cpf');
-    const hiddenNome = document.getElementById('hidden_nome');
-    const buscaCpf = document.getElementById('busca_cpf');
-    
-    if(hiddenCpf) hiddenCpf.value = "";
-    if(hiddenNome) hiddenNome.value = "";
-    if(buscaCpf) buscaCpf.value = ""; // Limpa visualmente a busca
     
     const btnDelete = document.getElementById('btn-delete-atendimento');
     if(btnDelete) btnDelete.classList.add('hidden');
@@ -862,40 +880,22 @@ function abrirEdicaoAtendimentoId(id) {
     if(at) abrirEdicaoAtendimento(at);
 }
 
+/**
+ * FUNÇÃO CORRIGIDA: Abrir Novo Atendimento Direto
+ * Garante que o formulário seja limpo, mas preserva e define o paciente alvo.
+ */
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
     
-    // 1. Alterna para a aba SEM resetar automaticamente
+    // 1. Alterna para a aba SEM resetar automaticamente (false)
     switchTab('form-atendimento', false);
     
-    // 2. EM VEZ DE USAR resetFormAtendimento(), LIMPA MANUALMENTE APENAS O NECESSÁRIO
-    // Isso evita que o formulário todo seja limpo (especificamente busca_cpf) e conflite com os dados que vamos inserir
-    
-    // Limpa a lista temporária de procedimentos (começa do zero)
-    listaProcedimentosTemp = [];
-    renderizarTabelaProcedimentos();
-    
-    // Limpa apenas os campos do "card" de adicionar procedimento, NÃO o campo de busca
-    ['field_especialidade', 'field_procedimento', 'field_local', 'field_tipo', 
-     'field_valor', 'field_data_marcacao', 'field_data_risco', 'field_data_conclusao', 
-     'field_obs_atendimento', 'field_prontuario'].forEach(fid => {
-        const el = document.getElementById(fid);
-        if(el) el.value = '';
-    });
-    
-    // Reseta selects do card
-    if(typeof CONFIG_SELECTS !== 'undefined') {
-        CONFIG_SELECTS.forEach(cfg => {
-            const sel = document.getElementById(`sel_${cfg.id}`);
-            if(sel) sel.value = "";
-            cancelSelectNew(cfg.id);
-        });
-    }
+    // 2. Chama o reset em modo "preserveSearch" = true
+    // Isso limpa a lista e os campos, mas NÃO o input de busca ou os hiddens do paciente
+    // MAS espere, queremos forçar um NOVO paciente, então melhor resetar tudo e DEPOIS preencher.
+    resetFormAtendimento(); 
 
-    // Garante modo de criação (não edição)
-    toggleModoEdicao(false);
-
-    // 3. AGORA PREENCHE OS DADOS DO MUNÍCIPE
+    // 3. Preenchimento DO CAMPO DE BUSCA (Explicitamente após o reset)
     const inputBusca = document.getElementById('busca_cpf');
     if(inputBusca) inputBusca.value = cpf;
 
