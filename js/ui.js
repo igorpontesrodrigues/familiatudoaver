@@ -710,6 +710,16 @@ function resetFormAtendimento() {
     // RESTAURA MODO PADRÃO (NOVO)
     toggleModoEdicao(false);
 
+    // RESET DO PRONTUÁRIO (Volta a ficar bloqueado)
+    const prontuarioInput = document.getElementById('field_prontuario');
+    if(prontuarioInput) {
+        prontuarioInput.value = '';
+        prontuarioInput.disabled = true;
+        prontuarioInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+        prontuarioInput.classList.remove('bg-white');
+        prontuarioInput.placeholder = "Selecione Local HO...";
+    }
+
     const inpConclusao = document.getElementById('field_data_conclusao');
     if(inpConclusao) {
         inpConclusao.onchange = checkStatusConclusao;
@@ -798,7 +808,22 @@ function abrirEdicaoAtendimento(at) {
     }
 
     document.getElementById('data_abertura').value = at.data_abertura || '';
-    document.getElementById('field_prontuario').value = at.prontuario || '';
+    
+    // LOGICA DO PRONTUÁRIO NA EDIÇÃO
+    const prontuarioInput = document.getElementById('field_prontuario');
+    const localVal = at.local ? at.local.toUpperCase() : '';
+    
+    if(localVal === 'HO') {
+        prontuarioInput.disabled = false;
+        prontuarioInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+        prontuarioInput.classList.add('bg-white');
+        prontuarioInput.value = at.prontuario || '';
+    } else {
+        prontuarioInput.disabled = true;
+        prontuarioInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+        prontuarioInput.value = '';
+    }
+
     document.getElementById('field_tipo').value = at.tipo || ''; 
     document.getElementById('field_data_marcacao').value = at.data_marcacao || '';
     document.getElementById('field_data_risco').value = at.data_risco || '';
