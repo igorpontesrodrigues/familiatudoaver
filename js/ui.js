@@ -865,58 +865,47 @@ function abrirEdicaoAtendimentoId(id) {
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
     
-    // 1. Alterna para a aba SEM resetar automaticamente
+    // 1. Alterna para a aba SEM resetar
     switchTab('form-atendimento', false);
     
-    // 2. Reseta o formulário explicitamente PARA LIMPAR DADOS ANTERIORES
+    // 2. Reseta para limpar estado anterior
     resetFormAtendimento();
 
-    // 3. Define o valor do input IMEDIATAMENTE após o reset
+    // 3. Preenchimento
     const inputBusca = document.getElementById('busca_cpf');
-    if(inputBusca) {
-        inputBusca.value = cpf; 
-    }
+    const hiddenCpf = document.getElementById('hidden_cpf');
+    const hiddenNome = document.getElementById('hidden_nome');
+    const resDiv = document.getElementById('resultado_busca');
+    const restoForm = document.getElementById('resto-form-atendimento');
 
-    // Tenta achar o paciente na memória local (todosPacientes)
+    // Define o valor do visual
+    if(inputBusca) inputBusca.value = cpf;
+
+    // Tenta encontrar dados completos na memória
     let paciente = null;
     if (typeof todosPacientes !== 'undefined' && Array.isArray(todosPacientes)) {
-        // Normaliza CPF para comparação (apenas números)
         const cpfLimpo = String(cpf).replace(/\D/g, '');
-        
-        // Tenta por ID primeiro
-        paciente = todosPacientes.find(p => String(p.id) === String(id));
-        
-        // Se não achou, tenta por CPF
-        if (!paciente && cpfLimpo.length > 0) {
-            paciente = todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
-        }
+        paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
+                   todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
     }
 
     if (paciente) {
-        // CASO 1: Paciente encontrado na memória -> Preenche direto
-        const resDiv = document.getElementById('resultado_busca');
-        if(resDiv) {
-            resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
-        }
+        // PREENCHIMENTO DIRETO (Memória)
+        if(resDiv) resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
+        if(hiddenCpf) hiddenCpf.value = paciente.cpf || cpf;
+        if(hiddenNome) hiddenNome.value = paciente.nome;
+        if(restoForm) restoForm.classList.remove('hidden');
         
-        document.getElementById('hidden_cpf').value = paciente.cpf || cpf;
-        document.getElementById('hidden_nome').value = paciente.nome;
-        document.getElementById('resto-form-atendimento').classList.remove('hidden');
-        
-        // Foca no campo de data para agilizar
         setTimeout(() => {
              const dataInput = document.getElementById('data_abertura');
              if(dataInput) dataInput.focus();
         }, 100);
-        
     } else {
-        // CASO 2: Paciente não está na lista local -> Dispara busca na API
-        // Usamos setTimeout para garantir que a UI atualizou e a função de busca pegará o valor correto do input
-        setTimeout(() => {
-            if(typeof buscarPacienteParaAtendimento === 'function') {
-                buscarPacienteParaAtendimento();
-            }
-        }, 200);
+        // BUSCA NA API (Fallback)
+        if(resDiv) resDiv.innerText = "Buscando dados...";
+        if(typeof buscarPacienteParaAtendimento === 'function') {
+            buscarPacienteParaAtendimento();
+        }
     }
     
     if(typeof lucide !== 'undefined') lucide.createIcons();
