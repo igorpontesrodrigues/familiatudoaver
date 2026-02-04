@@ -73,3 +73,95 @@ document.addEventListener('change', function(e) {
         }
     }
 });
+
+// ============================================================================
+// SOBRESCRITA DE CORREÇÃO (PATCH)
+// ============================================================================
+// Esta função substitui a do ui.js para garantir que o fluxo de Novo Atendimento 
+// funcione corretamente sem ser apagado pelo reset do formulário.
+
+window.abrirAtendimentoDireto = function(cpf, id) {
+    if(!cpf || cpf.length < 5) { 
+        alert("Munícipe sem CPF. Edite o cadastro primeiro."); 
+        if(typeof abrirEdicaoDireta === 'function') abrirEdicaoDireta(cpf, id); 
+        return; 
+    }
+    
+    // 1. Alterna para a aba SEM resetar automaticamente (false)
+    if(typeof switchTab === 'function') switchTab('form-atendimento', false);
+    
+    // 2. LIMPEZA MANUAL SEGURA
+    // Ao invés de usar resetFormAtendimento() que limpa tudo, limpamos apenas o necessário
+    
+    // Limpa lista temporária
+    if(typeof listaProcedimentosTemp !== 'undefined') {
+        listaProcedimentosTemp = [];
+        if(typeof renderizarTabelaProcedimentos === 'function') renderizarTabelaProcedimentos();
+    }
+
+    // Reseta campos do formulário visualmente, MAS NÃO O BUSCA_CPF
+    const frm = document.getElementById('frmAtendimento');
+    if(frm) {
+        // Limpa inputs exceto o de busca
+        const inputs = frm.querySelectorAll('input:not(#busca_cpf), textarea, select');
+        inputs.forEach(inp => {
+            if(inp.type !== 'button' && inp.type !== 'submit' && inp.type !== 'hidden') {
+                inp.value = '';
+            }
+        });
+        // Reseta IDs ocultos de edição
+        document.getElementById('atend_id_hidden').value = '';
+    }
+
+    // Reseta selects customizados
+    if(typeof CONFIG_SELECTS !== 'undefined') {
+        CONFIG_SELECTS.forEach(cfg => {
+            const sel = document.getElementById(`sel_${cfg.id}`);
+            if(sel) sel.value = "";
+            if(typeof cancelSelectNew === 'function') cancelSelectNew(cfg.id);
+        });
+    }
+
+    // Restaura interface para modo "Novo"
+    if(typeof toggleModoEdicao === 'function') toggleModoEdicao(false);
+    document.getElementById('resultado_busca').innerText = '';
+    document.getElementById('resto-form-atendimento').classList.add('hidden');
+    
+    const dataAb = document.getElementById('data_abertura');
+    if(dataAb) dataAb.valueAsDate = new Date();
+
+    // 3. PREENCHIMENTO GARANTIDO
+    const inputBusca = document.getElementById('busca_cpf');
+    if(inputBusca) inputBusca.value = cpf;
+
+    // Tenta encontrar na memória (todosPacientes)
+    let paciente = null;
+    if (typeof todosPacientes !== 'undefined' && Array.isArray(todosPacientes)) {
+        const cpfLimpo = String(cpf).replace(/\D/g, '');
+        paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
+                   todosPacientes.find(p => String(p.cpf).replace(/\D/g, '') === cpfLimpo);
+    }
+
+    if (paciente) {
+        // Encontrou na memória: Preenche direto
+        const resDiv = document.getElementById('resultado_busca');
+        const hiddenCpf = document.getElementById('hidden_cpf');
+        const hiddenNome = document.getElementById('hidden_nome');
+        
+        if(resDiv) resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
+        if(hiddenCpf) hiddenCpf.value = paciente.cpf || cpf;
+        if(hiddenNome) hiddenNome.value = paciente.nome;
+        
+        document.getElementById('resto-form-atendimento').classList.remove('hidden');
+        
+        // Foca na data
+        if(dataAb) setTimeout(() => dataAb.focus(), 100);
+    } else {
+        // Não encontrou: Busca na API
+        if(typeof buscarPacienteParaAtendimento === 'function') {
+            buscarPacienteParaAtendimento();
+        }
+    }
+    
+    if(typeof lucide !== 'undefined') lucide.createIcons();
+};
