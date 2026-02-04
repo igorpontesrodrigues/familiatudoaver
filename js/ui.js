@@ -194,6 +194,11 @@ function abrirDetalheAtendimento(at) {
     innerModal.classList.remove('hidden');
     backdrop.classList.remove('hidden');
 
+    // Associa o objeto ao botão de imprimir para uso posterior
+    const btnPrint = document.createElement('button');
+    btnPrint.id = 'btn-imprimir-guia'; // ID único para evitar duplicação ou referência
+    // ... mas como vamos reinserir os botões dinamicamente abaixo, ok.
+
     document.getElementById('det-paciente').innerText = at.nome_paciente || at.nome || '-';
     document.getElementById('det-cpf').innerText = `CPF: ${at.cpf_paciente || at.cpf || '-'}`;
     document.getElementById('det-status').innerText = at.status || 'PENDENTE';
@@ -214,17 +219,38 @@ function abrirDetalheAtendimento(at) {
     document.getElementById('det-risco').innerText = at.data_risco ? at.data_risco.split('-').reverse().join('/') : '-';
     document.getElementById('det-obs').innerText = at.obs_atendimento || 'Sem observações.';
 
-    const btnEdit = document.getElementById('btn-editar-detalhe');
-    
-    if(currentUserRole === 'VISITOR') {
-        btnEdit.classList.add('hidden');
-    } else {
-        btnEdit.classList.remove('hidden');
-        btnEdit.onclick = function() {
-            fecharDetalhe();
-            abrirEdicaoAtendimento(at);
-        };
+    // Área de botões no rodapé do modal
+    const footerModal = document.querySelector('#view-detalhe-atendimento .border-t');
+    if (footerModal) {
+        // Recria os botões para garantir estado limpo e adicionar o de impressão
+        footerModal.innerHTML = `
+            <div class="flex justify-end gap-3 w-full">
+                <button onclick="imprimirGuiaAtendimento(window['at_${at.id}'] || window['at_temp_guia'])" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-2" title="Imprimir Guia">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Guia
+                </button>
+                <button onclick="fecharDetalhe()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">Fechar</button>
+                <button id="btn-editar-detalhe" class="btn-action px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-md flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i> Editar Atendimento
+                </button>
+            </div>
+        `;
+        
+        // Armazena objeto temporário para impressão caso o ID global falhe
+        window['at_temp_guia'] = at;
+
+        // Reatribui evento de editar
+        const btnEdit = document.getElementById('btn-editar-detalhe');
+        if(currentUserRole === 'VISITOR') {
+            btnEdit.classList.add('hidden');
+        } else {
+            btnEdit.onclick = function() {
+                fecharDetalhe();
+                abrirEdicaoAtendimento(at);
+            };
+        }
     }
+    
+    if(typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function fecharDetalhe() {
@@ -851,10 +877,38 @@ function abrirEdicaoAtendimentoId(id) {
 
 function abrirAtendimentoDireto(cpf, id) {
     if(!cpf || cpf.length < 5) { alert("Munícipe sem CPF. Edite o cadastro primeiro."); abrirEdicaoDireta(cpf, id); return; }
-    // Aqui usamos o reset padrão (true) pois é um NOVO atendimento para um paciente existente
+    
+    // Tenta achar o paciente na memória local para evitar delay de rede
+    let paciente = null;
+    if (typeof todosPacientes !== 'undefined') {
+        paciente = todosPacientes.find(p => String(p.id) === String(id)) || 
+                   todosPacientes.find(p => String(p.cpf) === String(cpf));
+    }
+
+    // Aqui usamos o reset padrão (true) pois é um NOVO atendimento
     switchTab('form-atendimento'); 
-    document.getElementById('busca_cpf').value = cpf;
-    if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
+    
+    const inputBusca = document.getElementById('busca_cpf');
+    if(inputBusca) inputBusca.value = cpf || (paciente ? paciente.cpf : '');
+
+    if (paciente) {
+        // Preenchimento imediato (Simula sucesso da busca)
+        const resDiv = document.getElementById('resultado_busca');
+        resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${paciente.nome}</span>`;
+        
+        document.getElementById('hidden_cpf').value = paciente.cpf || '';
+        document.getElementById('hidden_nome').value = paciente.nome;
+        document.getElementById('resto-form-atendimento').classList.remove('hidden');
+        
+        // Foca no primeiro campo útil
+        setTimeout(() => {
+             const dataInput = document.getElementById('data_abertura');
+             if(dataInput) dataInput.focus();
+        }, 100);
+    } else {
+        // Fallback se não achar na memória (ex: acesso direto sem carregar lista)
+        if(typeof buscarPacienteParaAtendimento === 'function') buscarPacienteParaAtendimento();
+    }
 }
 
 async function submitPaciente(e) {
@@ -1109,7 +1163,8 @@ function imprimirFicha() {
                 logradouro: document.getElementById('field_logradouro').value,
                 bairro: document.getElementById('field_bairro') ? document.getElementById('field_bairro').value : '',
                 municipio: document.getElementById('field_municipio') ? document.getElementById('field_municipio').value : '',
-                referencia: document.getElementById('field_referencia').value || document.getElementById('field_apelido').value,
+                referencia: document.getElementById('field_referencia').value,
+                apelido: document.getElementById('field_apelido').value,
                 status_titulo: document.getElementById('field_status_titulo') ? document.getElementById('field_status_titulo').value : '',
                 zona: document.getElementById('field_zona').value,
                 secao: document.getElementById('field_secao').value,
@@ -1240,12 +1295,16 @@ function imprimirFicha() {
                         <div style="${styleValue}">${safe(p.municipio)}</div>
                     </div>
                     <div style="flex: 1;">
-                        <span style="${styleLabel}">Referência</span>
-                        <div style="${styleValue}">${safe(p.apelido || p.referencia)}</div>
+                        <span style="${styleLabel}">Ponto de Referência</span>
+                        <div style="${styleValue}">${safe(p.referencia)}</div>
                     </div>
                 </div>
                 
                  <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Referência (Apelido)</span>
+                        <div style="${styleValue}">${safe(p.apelido)}</div>
+                    </div>
                     <div style="flex: 1;">
                         <span style="${styleLabel}">Situação Eleitoral</span>
                         <div style="${styleValue}">${safe(p.status_titulo)}</div>
@@ -1254,9 +1313,16 @@ function imprimirFicha() {
                         <span style="${styleLabel}">Zona / Seção</span>
                         <div style="${styleValue}">${safe(p.zona)} / ${safe(p.secao)}</div>
                     </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
                     <div style="flex: 1;">
-                        <span style="${styleLabel}">Liderança / Indicação</span>
-                        <div style="${styleValue}">${safe(p.lideranca || p.indicacao)}</div>
+                        <span style="${styleLabel}">Liderança (É Líder?)</span>
+                        <div style="${styleValue}">${safe(p.lideranca)}</div>
+                    </div>
+                    <div style="flex: 2;">
+                        <span style="${styleLabel}">Quem Indicou (Indicação)</span>
+                        <div style="${styleValue}">${safe(p.indicacao)}</div>
                     </div>
                 </div>
                 
@@ -1270,6 +1336,119 @@ function imprimirFicha() {
             
             <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px;">
                 Impresso em ${new Date().toLocaleString('pt-BR')} - Sistema de Gestão Interna
+            </div>
+        </div>
+    `;
+
+    printArea.innerHTML = html;
+    window.print();
+}
+
+/**
+ * Função para imprimir GUIA DE ATENDIMENTO ÚNICO (Comprovante)
+ */
+function imprimirGuiaAtendimento(at) {
+    if (!at) return;
+    const printArea = document.getElementById('printable-area');
+    if(!printArea) return;
+
+    // Estilos
+    const styleLabel = "display: block; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;";
+    const styleValue = "border-bottom: 1px solid #333; min-height: 20px; width: 100%; margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #000; padding-bottom: 2px;";
+    const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px;";
+    const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
+    
+    const safe = (val) => val || '-';
+    const money = (val) => {
+        if(!val) return 'R$ 0,00';
+        return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const dataFmt = at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-';
+    
+    const html = `
+        <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; max-width: 100%;">
+            
+            <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Guia de Atendimento</h1>
+                <p style="margin: 2px 0 0; color: #555; font-size: 12px;">Protocolo: ${at.id || 'N/A'}</p>
+            </div>
+
+            <!-- DADOS MUNÍCIPE -->
+            <div style="${styleSection}">
+                <h2 style="${styleTitle}">MUNÍCIPE</h2>
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 3;">
+                        <span style="${styleLabel}">Nome</span>
+                        <div style="${styleValue}">${safe(at.nome_paciente || at.nome)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">CPF</span>
+                        <div style="${styleValue}">${safe(at.cpf_paciente || at.cpf)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DADOS DO SERVIÇO -->
+            <div style="${styleSection}">
+                <h2 style="${styleTitle}">DETALHES DO PROCEDIMENTO</h2>
+                
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Data Solicitação</span>
+                        <div style="${styleValue}">${dataFmt}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Categoria</span>
+                        <div style="${styleValue}">${safe(at.tipo_servico)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Tipo Atendimento</span>
+                        <div style="${styleValue}">${safe(at.tipo)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Especialidade</span>
+                        <div style="${styleValue}">${safe(at.especialidade)}</div>
+                    </div>
+                    <div style="flex: 2;">
+                        <span style="${styleLabel}">Procedimento / Exame</span>
+                        <div style="${styleValue}">${safe(at.procedimento)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Local</span>
+                        <div style="${styleValue}">${safe(at.local)}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Médico / Parceiro</span>
+                        <div style="${styleValue}">${safe(at.parceiro)}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 4px;">
+                    <div style="flex: 1;">
+                        <span style="${styleLabel}">Valor Processo</span>
+                        <div style="${styleValue} border: none; font-size: 18px;">${money(at.valor)}</div>
+                    </div>
+                    <div style="flex: 1; text-align: right;">
+                        <span style="${styleLabel}">Total</span>
+                        <div style="${styleValue} border: none; font-size: 18px; color: #2563eb;">${money(at.valor)}</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <span style="${styleLabel}">Observações</span>
+                    <div style="${styleValue} height: auto; min-height: 40px; font-weight: normal;">${safe(at.obs_atendimento)}</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; font-size: 10px; color: #888; margin-top: 40px;">
+                Gabinete Família Tudo a Ver - Emissão: ${new Date().toLocaleString('pt-BR')}
             </div>
         </div>
     `;
