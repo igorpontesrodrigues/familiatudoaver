@@ -29,19 +29,14 @@ const CONFIG_SELECTS = [
     // 3. ESPECIALIDADE
     { id: 'especialidade', label: 'Especialidade', container: 'container_especialidade', key: 'ESPECIALIDADE' },
     
-    // 4. SOLICITAÇÃO (Antigo Procedimento/Exames - RENOMEADO)
-    { id: 'solicitacao', label: 'Solicitação', container: 'container_solicitacao', key: 'SOLICITACAO' },
+    // 4. PROCEDIMENTO/EXAMES
+    { id: 'procedimento', label: 'Procedimento/Exames', container: 'container_procedimento', key: 'PROCEDIMENTO_EXAMES' },
     
-    // 5. LOCAL
+    // 5. LOCAL (Restaurado)
     { id: 'local', label: 'Local de Atendimento', container: 'container_local', key: 'LOCAL' },
 
-    // 6. TIPOS (Específico HO)
-    { id: 'tipos_exame', label: 'Tipos (Detalhe Exame)', container: 'container_tipos_exame', key: 'TIPOS_EXAME' },
-    
-    // 7. TRANSPORTE (NOVO)
-    // Nota: Transporte será um Select fixo (Sim/Não) no HTML, mas se quiser dinâmico, descomente abaixo.
-    // Por enquanto, farei hardcoded no HTML para ser mais rápido, ou via config se quiser opções como "Van", "Ambulância".
-    // Vamos manter via HTML simples conforme pedido (Sim/Não).
+    // 6. TIPOS (Novo - Condicional: Só aparece se Local == HO)
+    { id: 'tipos_exame', label: 'Tipos (Específico HO)', container: 'container_tipos_exame', key: 'TIPOS_EXAME' },
 
     // Extras
     { id: 'parceiro', label: 'Parceiro/Médico', container: 'container_parceiro', key: 'PARCEIRO' },
@@ -60,7 +55,7 @@ let dashboardRawData = null;
 
 window.dadosRelatorioCache = { 
     especialidade: [], 
-    solicitacao: [], // Renomeado de procedimento
+    procedimento: [],
     lideranca: []
 };
 
