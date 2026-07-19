@@ -1,4 +1,4 @@
-/* * css/style.css
+/* css/style.css
  * Estilos personalizados do sistema de gestão
  */
 
@@ -8,9 +8,22 @@
     backdrop-filter: blur(4px); 
 }
 
+html.dark .loading-overlay {
+    background: rgba(15, 23, 42, 0.95);
+}
+
 /* Garante visibilidade do ícone de calendário em inputs date */
-input::-webkit-calendar-picker-indicator { 
+input[type="date"]::-webkit-calendar-picker-indicator { 
     opacity: 100; 
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Esconde a seta padrão de datalist dos navegadores (mantém só a seta customizada) */
+.hide-datalist-arrow::-webkit-calendar-picker-indicator {
+    display: none !important;
 }
 
 /* Animação de entrada suave */
@@ -29,10 +42,18 @@ input::-webkit-calendar-picker-indicator {
     cursor: pointer; 
 }
 
+html.dark .table-row:hover {
+    background-color: #1e293b;
+}
+
 /* Input alternativo (para cadastro de novos itens nos selects) */
 .switched-input { 
     border-color: #2563eb; 
     background-color: #eff6ff; 
+}
+
+html.dark .switched-input {
+    background-color: #1e1b4b;
 }
 
 /* Estilos de Formulário */
@@ -47,6 +68,11 @@ input::-webkit-calendar-picker-indicator {
     border-bottom: 1px solid #e2e8f0; 
 }
 
+html.dark .form-section-title {
+    color: #94a3b8;
+    border-color: #334155;
+}
+
 .input-field { 
     width: 100%; 
     border-radius: 0.5rem; 
@@ -54,6 +80,14 @@ input::-webkit-calendar-picker-indicator {
     padding: 0.625rem; 
     font-size: 0.875rem; 
     transition: all 0.2s; 
+    background-color: #ffffff;
+    color: #334155;
+}
+
+html.dark .input-field {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #f8fafc;
 }
 
 .input-field:focus { 
@@ -70,6 +104,10 @@ input::-webkit-calendar-picker-indicator {
     margin-bottom: 0.25rem; 
 }
 
+html.dark .label-field {
+    color: #cbd5e1;
+}
+
 /* Estilos para o Gráfico de Torre Humano (Dashboard) */
 .gender-tower { 
     width: 60px; 
@@ -81,6 +119,10 @@ input::-webkit-calendar-picker-indicator {
     display: flex; 
     align-items: flex-end; 
     justify-content: center; 
+}
+
+html.dark .gender-tower {
+    background: #334155;
 }
 
 .gender-fill { 
@@ -110,13 +152,18 @@ input::-webkit-calendar-picker-indicator {
         display: none !important;
     }
 
-    /* Esconde todas as divs filhas do main, exceto a printable-area */
-    main > div:not(#printable-area) {
+    /* Esconde todas as divs filhas do main que estão com a classe 'hidden' */
+    main > div.hidden {
+        display: none !important;
+    }
+
+    /* Esconde divs que não são a printable-area nem o view-agenda */
+    main > div:not(#printable-area):not(#view-agenda) {
         display: none !important;
     }
 
     /* Configura a área de impressão para aparecer */
-    #printable-area {
+    #printable-area, #view-agenda {
         display: block !important;
         position: absolute;
         top: 0;
@@ -128,9 +175,20 @@ input::-webkit-calendar-picker-indicator {
         z-index: 9999;
     }
 
-    /* Garante que o conteúdo do printable-area seja visível */
-    #printable-area * {
+    /* Garante que o conteúdo seja visível */
+    #printable-area *, #view-agenda * {
         visibility: visible !important;
+    }
+
+    /* Esconde os filtros e botões da agenda na hora de imprimir */
+    #view-agenda .md\:w-1\/4, 
+    #view-agenda button,
+    .print\:hidden {
+        display: none !important;
+    }
+    
+    #view-agenda .md\:w-3\/4 {
+        width: 100% !important;
     }
 
     /* Reseta configurações de scroll do body para imprimir tudo */
