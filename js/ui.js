@@ -573,6 +573,8 @@ function switchTab(tabId, shouldReset = true) {
     }
 
     if (tabId === 'lista-atendimentos' && typeof carregarListaAtendimentos === 'function') carregarListaAtendimentos();
+    if (tabId === 'lista-servicos' && typeof carregarServicosPublicos === 'function') carregarServicosPublicos();
+    if (tabId === 'lista-curriculos' && typeof carregarCurriculos === 'function') carregarCurriculos();
     if (tabId === 'dashboard' && typeof loadDashboard === 'function') loadDashboard();
     if (tabId === 'parceiros' && typeof initParceiros === 'function') initParceiros();
     if (tabId === 'liderancas' && typeof initLiderancas === 'function') initLiderancas();
