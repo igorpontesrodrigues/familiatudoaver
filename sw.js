@@ -1,4 +1,4 @@
-const CACHE_NAME = 'connecta-v2';
+const CACHE_NAME = 'connecta-v3';
 const urlsToCache = [
   '/',
   '/index.html',
