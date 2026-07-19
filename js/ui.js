@@ -573,8 +573,30 @@ function switchTab(tabId, shouldReset = true) {
     }
 
     if (tabId === 'lista-atendimentos' && typeof carregarListaAtendimentos === 'function') carregarListaAtendimentos();
-    if (tabId === 'lista-servicos' && typeof carregarServicosPublicos === 'function') carregarServicosPublicos();
-    if (tabId === 'lista-curriculos' && typeof carregarCurriculos === 'function') carregarCurriculos();
+    
+    // Serviços Públicos: garantir que o HTML das views foi injetado antes de usar
+    if (tabId === 'lista-servicos' || tabId === 'form-servicos') {
+        if (typeof initServicosPublicos === 'function') {
+            const formServicos = document.getElementById('frmServicoPublico');
+            if (!formServicos) {
+                initServicosPublicos();
+            } else if (tabId === 'lista-servicos' && typeof carregarServicosPublicos === 'function') {
+                carregarServicosPublicos();
+            }
+        }
+    }
+    
+    // Currículos: garantir que o HTML das views foi injetado antes de usar
+    if (tabId === 'lista-curriculos' || tabId === 'form-curriculos') {
+        if (typeof initCurriculos === 'function') {
+            const formCurriculos = document.getElementById('frmCurriculo');
+            if (!formCurriculos) {
+                initCurriculos();
+            } else if (tabId === 'lista-curriculos' && typeof carregarCurriculos === 'function') {
+                carregarCurriculos();
+            }
+        }
+    }
     if (tabId === 'dashboard' && typeof loadDashboard === 'function') loadDashboard();
     if (tabId === 'parceiros' && typeof initParceiros === 'function') initParceiros();
     if (tabId === 'liderancas' && typeof initLiderancas === 'function') initLiderancas();

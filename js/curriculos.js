@@ -235,6 +235,12 @@ function filtrarCurriculos() {
 }
 
 function novoCurriculo() {
+    // Garante que o form foi injetado no DOM antes de usar
+    if (!document.getElementById('frmCurriculo')) {
+        initCurriculos();
+        setTimeout(novoCurriculo, 300);
+        return;
+    }
     document.getElementById('frmCurriculo').reset();
     document.getElementById('curriculo_id').value = '';
     

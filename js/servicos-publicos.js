@@ -179,6 +179,12 @@ function filtrarServicos() {
 }
 
 function novoServicoPublico() {
+    // Garante que o form foi injetado no DOM antes de usar
+    if (!document.getElementById('frmServicoPublico')) {
+        initServicosPublicos();
+        setTimeout(novoServicoPublico, 300);
+        return;
+    }
     document.getElementById('frmServicoPublico').reset();
     document.getElementById('servico_id').value = '';
     
