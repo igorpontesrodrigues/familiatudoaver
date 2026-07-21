@@ -215,8 +215,20 @@ window.carregarListaAdmin = async function() {
             const chaveObj = String(data.tipo || data.chave || '').toUpperCase().trim();
             if (chaveObj !== tipoUpper) return;
             const nome = data.valor || data.nome;
-            itens.push({ id: doc.id, nome: nome });
+            if (nome) itens.push({ id: doc.id, nome: nome, col: 'config_selects' });
         });
+        
+        if (tipoUpper === 'TIPOS_SERVICO') {
+            try {
+                const snapTipos = await window.getDocs(window.collection(window.db, 'tipos_servico'));
+                snapTipos.forEach(doc => {
+                    const nome = doc.data().nome;
+                    if (nome && !itens.some(i => i.nome.toUpperCase() === nome.toUpperCase())) {
+                        itens.push({ id: doc.id, nome: nome, col: 'tipos_servico' });
+                    }
+                });
+            } catch(err) { console.error('Erro ao ler tipos_servico no admin', err); }
+        }
         
         itens.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
         
@@ -242,7 +254,7 @@ window.carregarListaAdmin = async function() {
                                 <div class="flex justify-end gap-2">
                                     ${(typeof currentUserRole !== 'undefined' && currentUserRole === 'ADMIN') ? `
                                     <button onclick="abrirModalSubstituirLista('${tipo}', '${item.id}', '${item.nome}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1.5 rounded transition" title="Substituir/Mesclar"><i data-lucide="git-merge" class="w-4 h-4"></i></button>
-                                    <button onclick="deletarItemLista('${item.id}', '${item.nome.replace(/'/g, "\\'")}')" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <button onclick="deletarItemLista('${item.id}', '${item.col || 'config_selects'}')" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     ` : '<span class="text-slate-300 text-xs italic">-</span>'}
                                 </div>
                             </td>
@@ -290,15 +302,20 @@ window.adicionarNovoItemLista = async function() {
             valor: novoNome.trim().toUpperCase(),
             criacao: new Date().toISOString()
         });
+        if (tipo === 'TIPOS_SERVICO') {
+            try {
+                await window.addDoc(window.collection(window.db, 'tipos_servico'), { nome: novoNome.trim().toUpperCase() });
+            } catch(e) { console.error('Erro ao sync com tipos_servico', e); }
+        }
         window.carregarListaAdmin();
         if(typeof carregarFiltros === 'function') carregarFiltros();
     } catch(e) { window.showModalAlert('Erro ao adicionar: ' + e.message); }
 };
 
-window.deletarItemLista = async function(id) {
+window.deletarItemLista = async function(id, col = 'config_selects') {
     if(!await window.showModalConfirm('Excluir este item permanentemente?')) return;
     try {
-        await window.deleteDoc(window.doc(window.db, 'config_selects', id));
+        await window.deleteDoc(window.doc(window.db, col, id));
         window.carregarListaAdmin();
         if(typeof carregarFiltros === 'function') carregarFiltros();
     } catch(e) { alert('Erro ao deletar: ' + e.message); }
@@ -898,7 +915,8 @@ window.atualizarOpcoesSelectAdmin = function() {
     const sel = document.getElementById('admin-select-lista');
     if(!sel) return;
     
-    const padroes = window.VALORES_PADRAO ? Object.keys(window.VALORES_PADRAO) : ['CATEGORIAS', 'ESPECIALIDADE', 'PROCEDIMENTO_EXAMES', 'PRIORIDADE', 'STATUS_ATENDIMENTO', 'STATUS_TITULO', 'LIDERANCA', 'LOCAL', 'PARCEIRO'];
+    const padroes = window.VALORES_PADRAO ? Object.keys(window.VALORES_PADRAO) : ['CATEGORIAS', 'ESPECIALIDADE', 'PROCEDIMENTO_EXAMES', 'PRIORIDADE', 'STATUS_ATENDIMENTO', 'STATUS_TITULO', 'LIDERANCA', 'LOCAL', 'PARCEIRO', 'TIPOS_SERVICO'];
+    if (!padroes.includes('TIPOS_SERVICO')) padroes.push('TIPOS_SERVICO');
     const extras = window.opcoesFiltros ? Object.keys(window.opcoesFiltros) : [];
     
     const chaves = new Set([...padroes, ...extras, 'INDICACAO']);

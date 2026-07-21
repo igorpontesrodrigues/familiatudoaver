@@ -10,7 +10,7 @@ function initServicosPublicos() {
                 <i data-lucide="map-pin" class="text-indigo-600"></i> Serviços Públicos
             </h2>
             <div class="flex gap-2 flex-wrap">
-                ${typeof currentUserRole !== 'undefined' && currentUserRole === 'admin' ? `<button onclick="abrirGerenciarTiposServico()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 text-sm"><i data-lucide="settings" class="w-4 h-4"></i> Gerenciar Tipos</button>` : ''}
+                ${typeof currentUserRole !== 'undefined' && currentUserRole === 'ADMIN' ? `<button onclick="abrirGerenciarTiposServico()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 text-sm"><i data-lucide="settings" class="w-4 h-4"></i> Gerenciar Tipos</button>` : ''}
                 <button onclick="imprimirPendenciasServicos()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 text-sm">
                     <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Pendências
                 </button>
@@ -94,7 +94,9 @@ function initServicosPublicos() {
                     <input type="date" id="servico_data_conclusao" class="input-field">
                 </div>
                 <div class="md:col-span-4">
-                    <label class="label-field">Tipo de Serviço</label>
+                    <label class="label-field">Tipo de Serviço
+                        ${typeof currentUserRole !== 'undefined' && currentUserRole !== 'VISITOR' ? `<button type="button" onclick="adicionarTipoServicoRapido()" class="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition"><i data-lucide="plus" class="w-3 h-3"></i> Novo Tipo</button>` : ''}
+                    </label>
                     <div class="flex gap-2">
                         <select id="servico_tipo" required class="input-field uppercase flex-1">
                             <option value="">Selecione...</option>
@@ -150,12 +152,26 @@ let tiposServicoPadrao = ['TROCA DE LÂMPADA', 'COLETA DE ENTULHO', 'CAPINA/ROÇ
 
 async function carregarTiposServico() {
     try {
-        const snap = await window.getDocs(window.collection(window.db, "tipos_servico"));
         let tipos = [...tiposServicoPadrao];
-        snap.forEach(doc => {
-            const nome = doc.data().nome;
-            if (nome && !tipos.includes(nome)) tipos.push(nome);
-        });
+        try {
+            const snapTipos = await window.getDocs(window.collection(window.db, "tipos_servico"));
+            snapTipos.forEach(doc => {
+                const nome = doc.data().nome;
+                if (nome && !tipos.includes(nome)) tipos.push(nome);
+            });
+        } catch(e) { console.error('Erro ler tipos_servico', e); }
+        try {
+            const snapConfig = await window.getDocs(window.collection(window.db, "config_selects"));
+            snapConfig.forEach(doc => {
+                const data = doc.data();
+                const chave = String(data.tipo || data.chave || '').toUpperCase().trim();
+                if (chave === 'TIPOS_SERVICO') {
+                    const nome = data.valor || data.nome;
+                    if (nome && !tipos.includes(nome)) tipos.push(nome);
+                }
+            });
+        } catch(e) { console.error('Erro ler config_selects', e); }
+        tipos.sort();
         const sel = document.getElementById('servico_tipo');
         if (!sel) return;
         const valorAtual = sel.value;
@@ -195,16 +211,34 @@ async function renderListaTiposServico() {
     const div = document.getElementById('lista-tipos-servico');
     if (!div) return;
     try {
-        const snap = await window.getDocs(window.collection(window.db, "tipos_servico"));
-        let itens = tiposServicoPadrao.map(t => ({ nome: t, padrao: true, id: null }));
-        snap.forEach(doc => {
-            const nome = doc.data().nome;
-            if (nome && !tiposServicoPadrao.includes(nome)) itens.push({ nome, padrao: false, id: doc.id });
-        });
+        let itens = tiposServicoPadrao.map(t => ({ nome: t, padrao: true, id: null, col: null }));
+        try {
+            const snap = await window.getDocs(window.collection(window.db, "tipos_servico"));
+            snap.forEach(doc => {
+                const nome = doc.data().nome;
+                if (nome && !tiposServicoPadrao.includes(nome) && !itens.some(i => i.nome === nome)) {
+                    itens.push({ nome, padrao: false, id: doc.id, col: 'tipos_servico' });
+                }
+            });
+        } catch(e) {}
+        try {
+            const snapConfig = await window.getDocs(window.collection(window.db, "config_selects"));
+            snapConfig.forEach(doc => {
+                const data = doc.data();
+                const chave = String(data.tipo || data.chave || '').toUpperCase().trim();
+                if (chave === 'TIPOS_SERVICO') {
+                    const nome = data.valor || data.nome;
+                    if (nome && !tiposServicoPadrao.includes(nome) && !itens.some(i => i.nome === nome)) {
+                        itens.push({ nome, padrao: false, id: doc.id, col: 'config_selects' });
+                    }
+                }
+            });
+        } catch(e) {}
+        itens.sort((a,b) => a.nome.localeCompare(b.nome));
         div.innerHTML = itens.map(item => `
             <div class="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                 <span class="text-sm font-bold ${item.padrao ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200'}">${item.nome} ${item.padrao ? '<span class="text-[10px] text-slate-400">(padrão)</span>' : ''}</span>
-                ${!item.padrao ? `<button onclick="excluirTipoServico('${item.id}', '${item.nome}')" class="text-rose-500 hover:text-rose-700 p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                ${!item.padrao ? `<button onclick="excluirTipoServico('${item.id}', '${item.nome}', '${item.col || 'tipos_servico'}')" class="text-rose-500 hover:text-rose-700 p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
             </div>
         `).join('');
         if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -217,19 +251,40 @@ async function adicionarTipoServico() {
     if (!nome) return;
     try {
         await window.addDoc(window.collection(window.db, "tipos_servico"), { nome });
+        try { await window.addDoc(window.collection(window.db, "config_selects"), { chave: 'TIPOS_SERVICO', valor: nome, criacao: new Date().toISOString() }); } catch(e) {}
         input.value = '';
         renderListaTiposServico();
         carregarTiposServico();
     } catch(e) { window.showModalAlert('Erro ao adicionar tipo: ' + e.message); }
 }
 
-async function excluirTipoServico(id, nome) {
+async function excluirTipoServico(id, nome, col = 'tipos_servico') {
     if (!await window.showModalConfirm(`Excluir o tipo "${nome}"?`, 'Esta ação não pode ser desfeita.')) return;
     try {
-        await window.deleteDoc(window.doc(window.db, "tipos_servico", id));
+        await window.deleteDoc(window.doc(window.db, col, id));
         renderListaTiposServico();
         carregarTiposServico();
     } catch(e) { window.showModalAlert('Erro ao excluir: ' + e.message); }
+}
+
+async function adicionarTipoServicoRapido() {
+    const nome = typeof window.showModalPrompt === 'function' 
+        ? await window.showModalPrompt("Novo Tipo de Serviço", "Digite o nome do novo Tipo de Serviço:") 
+        : prompt("Digite o nome do novo Tipo de Serviço:");
+        
+    if (!nome || !nome.trim()) return;
+    const nomeFmt = nome.trim().toUpperCase();
+    try {
+        await window.addDoc(window.collection(window.db, "tipos_servico"), { nome: nomeFmt });
+        try { await window.addDoc(window.collection(window.db, "config_selects"), { chave: 'TIPOS_SERVICO', valor: nomeFmt, criacao: new Date().toISOString() }); } catch(e) {}
+        await carregarTiposServico();
+        const sel = document.getElementById('servico_tipo');
+        if (sel) sel.value = nomeFmt;
+        if (typeof showModalAlert === 'function') showModalAlert(`Tipo "${nomeFmt}" adicionado e selecionado!`);
+    } catch(e) {
+        if (typeof showModalAlert === 'function') showModalAlert('Erro ao adicionar tipo: ' + e.message);
+        else alert('Erro ao adicionar tipo: ' + e.message);
+    }
 }
 
 async function carregarServicosPublicos() {
