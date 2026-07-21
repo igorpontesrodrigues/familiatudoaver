@@ -97,12 +97,12 @@ function initCurriculos() {
                     <label class="label-field">CNH (Carteira de Habilitação)</label>
                     <select id="curriculo_cnh" class="input-field">
                         <option value="">Não Possui</option>
+                        <option value="ACC">ACC</option>
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="C">C</option>
                         <option value="D">D</option>
                         <option value="E">E</option>
-                        <option value="AB">AB</option>
                     </select>
                 </div>
                 <div class="md:col-span-4">
