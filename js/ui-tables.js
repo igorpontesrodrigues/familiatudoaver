@@ -1022,14 +1022,14 @@ async function gerarListagem() {
     else if (tipo === 'curriculos') {
         header = `<tr><th class="px-6 py-4">Data Entrada</th><th class="px-6 py-4">Candidato</th><th class="px-6 py-4">Cargo / Status</th><th class="px-6 py-4">Indicação</th></tr>`;
         const list = typeof todosCurriculos !== 'undefined' ? todosCurriculos : [];
-        list.sort((a,b) => (a.nome_municipe || '').localeCompare(b.nome_municipe || ''));
+        list.sort((a,b) => (a.nome || '').localeCompare(b.nome || ''));
         
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum currículo encontrado.</td></tr>`;
         } else {
             list.forEach(a => {
                 const dataFmt = a.data_entrada ? a.data_entrada.split('-').reverse().join('/') : '-';
-                html += `<tr><td class="px-6 py-3 text-sm">${dataFmt}</td><td class="px-6 py-3 font-bold text-slate-700">${a.nome_municipe || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.telefone||''}</span></td><td class="px-6 py-3">${a.cargo_proposto||'-'}<br><span class="text-xs text-slate-500 font-bold">${a.status||'-'}</span></td><td class="px-6 py-3 font-bold text-sm">${a.indicacao||'-'}</td></tr>`;
+                html += `<tr><td class="px-6 py-3 text-sm">${dataFmt}</td><td class="px-6 py-3 font-bold text-slate-700">${a.nome || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.telefone||''}</span></td><td class="px-6 py-3">${a.cargo_proposto||'-'}<br><span class="text-xs text-slate-500 font-bold">${a.status||'-'}</span></td><td class="px-6 py-3 font-bold text-sm">${a.indicacao||'-'}</td></tr>`;
             });
         }
     }
