@@ -210,12 +210,12 @@ async function renderListaTiposServico() {
     const div = document.getElementById('lista-tipos-servico');
     if (!div) return;
     try {
-        let itens = tiposServicoPadrao.map(t => ({ nome: t, padrao: true, id: null, col: null }));
+        let itens = [];
         try {
             const snap = await window.getDocs(window.collection(window.db, "tipos_servico"));
             snap.forEach(doc => {
                 const nome = doc.data().nome;
-                if (nome && !tiposServicoPadrao.includes(nome) && !itens.some(i => i.nome === nome)) {
+                if (nome && !itens.some(i => i.nome === nome)) {
                     itens.push({ nome, padrao: false, id: doc.id, col: 'tipos_servico' });
                 }
             });
@@ -227,7 +227,7 @@ async function renderListaTiposServico() {
                 const chave = String(data.tipo || data.chave || '').toUpperCase().trim();
                 if (chave === 'TIPOS_SERVICO') {
                     const nome = data.valor || data.nome;
-                    if (nome && !tiposServicoPadrao.includes(nome) && !itens.some(i => i.nome === nome)) {
+                    if (nome && !itens.some(i => i.nome === nome)) {
                         itens.push({ nome, padrao: false, id: doc.id, col: 'config_selects' });
                     }
                 }
