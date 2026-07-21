@@ -241,6 +241,16 @@ function imprimirFicha() {
         return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
+    // Garante sincronia do cache com todos os atendimentos na memória antes de imprimir
+    if (p && (p.cpf || p.id) && typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+        const cpfP = String(p.cpf || '').replace(/\D/g, '');
+        window.historicoAtualCache = todosAtendimentos.filter(a => {
+            const aCpf = String(a.cpf_paciente || a.cpf || '').replace(/\D/g, '');
+            return (cpfP && aCpf === cpfP) || (p.id && String(a.paciente_id || '') === String(p.id));
+        });
+        window.historicoAtualCache.sort((a,b) => new Date(b.data_criacao || b.data_abertura || '2000-01-01') - new Date(a.data_criacao || a.data_abertura || '2000-01-01'));
+    }
+
     // Gera o HTML do Histórico se houver dados em cache
     let historyHtml = '';
     if (window.historicoAtualCache && window.historicoAtualCache.length > 0) {
@@ -657,8 +667,9 @@ async function verHistoricoCompleto(p) {
             ${p.documentos_link ? `<div class="md:col-span-3 mt-2 pt-2 border-t border-slate-100"><span class="block text-xs font-bold text-slate-400 uppercase mb-2">Documentos Anexos</span> <a href="${p.documentos_link}" target="_blank" class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 font-bold py-2 px-4 rounded-lg transition text-sm"><i data-lucide="external-link" class="w-4 h-4"></i> Acessar Pasta de Documentos</a></div>` : ''}
         `;
 
-        if (todosAtendimentos.length === 0 && typeof carregarListaAtendimentos === 'function') {
+        if ((!todosAtendimentos || todosAtendimentos.length === 0 || window._atendimentosPrecisamRecarregar) && typeof carregarListaAtendimentos === 'function') {
             await carregarListaAtendimentos();
+            window._atendimentosPrecisamRecarregar = false;
         }
 
         const cpfP = String(p.cpf || '').replace(/\D/g, '');

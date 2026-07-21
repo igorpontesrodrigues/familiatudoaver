@@ -574,6 +574,11 @@ window.submitAtendimentoAPI = async (batch) => {
             await atualizarEstatisticas('atendimentos', acao, null, batch[0]);
         }
 
+        window._atendimentosPrecisamRecarregar = true;
+        if(typeof carregarListaAtendimentos === 'function') {
+            await carregarListaAtendimentos();
+        }
+
         if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
         showMessage(docsAtualizados > 1 ? 'Atendimentos salvos com sucesso!' : 'Atendimento salvo com sucesso!', 'success');
         if(typeof window.logAuditoria === 'function') window.logAuditoria('SALVAR_ATENDIMENTO', 'ATENDIMENTOS', 'Prontuário/Data: ' + batch[0]?.data_abertura || new Date().toISOString());
@@ -2027,6 +2032,11 @@ async function sendData(action, data, loadingId) {
             await saveNewFilter('ATENDIMENTO', data.tipo);
             await saveNewFilter('PROCEDIMENTO_EXAMES', data.procedimento);
 
+            window._atendimentosPrecisamRecarregar = true;
+            if(typeof carregarListaAtendimentos === 'function') {
+                await carregarListaAtendimentos();
+            }
+
             if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
             showMessage('Atendimento atualizado com sucesso!', 'success');
             return true;
@@ -2053,6 +2063,11 @@ async function sendData(action, data, loadingId) {
                 for(let item of data) {
                     await atualizarEstatisticas('atendimentos', 'criar', null, item);
                 }
+            }
+
+            window._atendimentosPrecisamRecarregar = true;
+            if(typeof carregarListaAtendimentos === 'function') {
+                await carregarListaAtendimentos();
             }
 
             if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
