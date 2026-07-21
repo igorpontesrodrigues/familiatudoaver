@@ -17,6 +17,9 @@ const DB_SEED = {
   ],
   "STATUS_ATENDIMENTO": [
     "Recebido", "Em Análise", "Encaminhado", "Aguardando Vaga", "Aguardando Retorno", "Agendado", "Em Tratamento", "Resolvers", "Resolvido", "Indeferido", "Cancelado"
+  ],
+  "TIPOS_SERVICO": [
+    "TROCA DE LÂMPADA", "COLETA DE ENTULHO", "CAPINA/ROÇADA", "TAPA BURACO", "OUTROS"
   ]
 };
 

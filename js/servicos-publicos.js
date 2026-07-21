@@ -148,11 +148,10 @@ function initServicosPublicos() {
 }
 
 let todosServicos = [];
-let tiposServicoPadrao = ['TROCA DE LÂMPADA', 'COLETA DE ENTULHO', 'CAPINA/ROÇADA', 'TAPA BURACO', 'OUTROS'];
 
 async function carregarTiposServico() {
     try {
-        let tipos = [...tiposServicoPadrao];
+        let tipos = [];
         try {
             const snapTipos = await window.getDocs(window.collection(window.db, "tipos_servico"));
             snapTipos.forEach(doc => {
