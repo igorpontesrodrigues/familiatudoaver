@@ -561,6 +561,7 @@ window.submitAtendimentoAPI = async (batch) => {
                 data.data_criacao = new Date().toISOString();
                 const newRef = window.doc(window.collection(window.db, "atendimentos"));
                 fireBatch.set(newRef, data);
+                data.id = newRef.id;
             } else {
                 acao = 'editar';
                 const docRef = window.doc(window.db, "atendimentos", docId);
@@ -576,9 +577,21 @@ window.submitAtendimentoAPI = async (batch) => {
             await atualizarEstatisticas('atendimentos', acao, null, batch[0]);
         }
 
+        if (typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+            for (let item of batch) {
+                if (acao === 'criar') {
+                    todosAtendimentos.unshift(item);
+                } else {
+                    const idx = todosAtendimentos.findIndex(a => a.id === item.id);
+                    if (idx > -1) todosAtendimentos[idx] = item;
+                    else todosAtendimentos.unshift(item);
+                }
+            }
+        }
+
         window._atendimentosPrecisamRecarregar = true;
         if(typeof carregarListaAtendimentos === 'function') {
-            await carregarListaAtendimentos();
+            carregarListaAtendimentos().catch(e => console.error("Reload error", e));
         }
 
         if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
@@ -2020,6 +2033,7 @@ async function sendData(action, data, loadingId) {
                 if(typeof window.logAuditoria === 'function') window.logAuditoria('EDIÇÃO', 'Atendimentos', `Edição do atendimento de: ${updateData.nome_paciente} (CPF: ${updateData.cpf_paciente})`);
             } else {
                 const novoDoc = await window.addDoc(window.collection(window.db, "atendimentos"), updateData);
+                data.id = novoDoc.id;
                 if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Atendimentos', `Criação de atendimento para: ${updateData.nome_paciente} (CPF: ${updateData.cpf_paciente})`);
             }
 
@@ -2034,9 +2048,19 @@ async function sendData(action, data, loadingId) {
             await saveNewFilter('ATENDIMENTO', data.tipo);
             await saveNewFilter('PROCEDIMENTO_EXAMES', data.procedimento);
 
+            if (typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+                if (acao === 'criar' || !id) {
+                    todosAtendimentos.unshift(data);
+                } else {
+                    const idx = todosAtendimentos.findIndex(a => a.id === data.id);
+                    if (idx > -1) todosAtendimentos[idx] = data;
+                    else todosAtendimentos.unshift(data);
+                }
+            }
+
             window._atendimentosPrecisamRecarregar = true;
             if(typeof carregarListaAtendimentos === 'function') {
-                await carregarListaAtendimentos();
+                carregarListaAtendimentos().catch(e => console.error("Reload error", e));
             }
 
             if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
@@ -2049,6 +2073,7 @@ async function sendData(action, data, loadingId) {
             
             data.forEach(item => {
                 const docRef = window.doc(atendimentosRef);
+                item.id = docRef.id;
                 batch.set(docRef, item);
                 
                 saveNewFilter('CATEGORIAS', item.tipo_servico);
@@ -2067,9 +2092,15 @@ async function sendData(action, data, loadingId) {
                 }
             }
 
+            if (typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+                data.forEach(item => {
+                    todosAtendimentos.unshift(item);
+                });
+            }
+
             window._atendimentosPrecisamRecarregar = true;
             if(typeof carregarListaAtendimentos === 'function') {
-                await carregarListaAtendimentos();
+                carregarListaAtendimentos().catch(e => console.error("Reload error", e));
             }
 
             if(loading) { loading.classList.add('hidden'); loading.classList.remove('flex'); }
