@@ -24,10 +24,12 @@ const VALORES_PADRAO = {
     'PROCEDIMENTO_EXAMES': ['USG', 'TC', 'RNM', 'ECG', 'DOPLLER', 'OFTALMOLÓGICOS'],
     'TIPOS_EXAME': ['RNM CRANIO', 'RNM PELVE', 'TC FACE', 'OCT', 'MAPEAMENTO RETINA'],
     'STATUS_TITULO': ['REGULAR', 'CANCELADO', 'SUSPENSO', 'NÃO POSSUI'],
+    'TIPOS_SERVICO': ['TROCA DE LÂMPADA', 'COLETA DE ENTULHO', 'CAPINA/ROÇADA', 'TAPA BURACO', 'OUTROS'],
     'LIDERANCA': [],
     'LOCAL': [],
     'PARCEIRO': []
 };
+window.VALORES_PADRAO = VALORES_PADRAO;
 
 async function carregarFiltros() {
     const safety = setTimeout(() => {

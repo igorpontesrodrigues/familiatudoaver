@@ -230,6 +230,14 @@ window.carregarListaAdmin = async function() {
             } catch(err) { console.error('Erro ao ler tipos_servico no admin', err); }
         }
         
+        if (window.VALORES_PADRAO && Array.isArray(window.VALORES_PADRAO[tipoUpper])) {
+            window.VALORES_PADRAO[tipoUpper].forEach(nomePadrao => {
+                if (!itens.some(i => i.nome.toUpperCase() === nomePadrao.toUpperCase())) {
+                    itens.push({ id: null, nome: nomePadrao, padrao: true, col: null });
+                }
+            });
+        }
+
         itens.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
         
         if (itens.length === 0) {
@@ -247,15 +255,15 @@ window.carregarListaAdmin = async function() {
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
             `;
             itens.forEach(item => {
+                const badgePadrao = item.padrao ? '<span class="text-[10px] font-bold text-slate-400 ml-1 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">(Padrão do Sistema)</span>' : '';
+                const btnMesclar = (typeof currentUserRole !== 'undefined' && currentUserRole === 'ADMIN') ? `<button onclick="abrirModalSubstituirLista('${tipo}', '${item.id || ''}', '${item.nome}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1.5 rounded transition" title="Substituir/Mesclar"><i data-lucide="git-merge" class="w-4 h-4"></i></button>` : '';
+                const btnExcluir = (!item.padrao && item.id && typeof currentUserRole !== 'undefined' && currentUserRole === 'ADMIN') ? `<button onclick="deletarItemLista('${item.id}', '${item.col || 'config_selects'}')" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
                 html += `
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200 font-medium uppercase">${item.nome}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200 font-medium uppercase">${item.nome} ${badgePadrao}</td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2">
-                                    ${(typeof currentUserRole !== 'undefined' && currentUserRole === 'ADMIN') ? `
-                                    <button onclick="abrirModalSubstituirLista('${tipo}', '${item.id}', '${item.nome}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1.5 rounded transition" title="Substituir/Mesclar"><i data-lucide="git-merge" class="w-4 h-4"></i></button>
-                                    <button onclick="deletarItemLista('${item.id}', '${item.col || 'config_selects'}')" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                    ` : '<span class="text-slate-300 text-xs italic">-</span>'}
+                                    ${btnMesclar || btnExcluir ? `${btnMesclar} ${btnExcluir}` : '<span class="text-slate-300 text-xs italic">-</span>'}
                                 </div>
                             </td>
                         </tr>`;
