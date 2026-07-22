@@ -1,16 +1,25 @@
 const DB_SEED = {
   "CATEGORIAS": [
-    "Consulta", "Exame", "Cirurgia", "Procedimento", "Internação", "Medicamento", "Tratamento", "Reabilitação", "TFD (Tratamento Fora do Domicílio)", "Terapia"
+    "Consulta", "Exame", "Cirurgia", "Procedimento", "Internação", "Medicamento", "Tratamento", "Reabilitação", "TFD (Tratamento Fora do Domicílio)", "Terapia",
+    "JURIDICO", "SAUDE", "SERVIÇO", "SOCIAL"
+  ],
+  "ATENDIMENTO": [
+    "CONSULTA AGENDADA", "CONSULTA EMERGENCIAL", "CONSULTA PRÉ OPERATORIA", "ENCAMINHAMENTOS", "EXAMES", "INTERNAÇÃO CIRURGICA", "ORIENTAÇÕES", "PROCEDIMENTOS"
   ],
   "ESPECIALIDADE": [
-    "Acupuntura", "Alergia e Imunologia", "Angiologia", "Cardiologia", "Cirurgia Cardíaca", "Cirurgia Geral", "Cirurgia Pediátrica", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Geral", "Coloproctologia", "Dermatologia", "Endocrinologia", "Endocrinologia Pediátrica", "Fisiatria", "Fisioterapia", "Fonoaudiologia", "Gastroenterologia", "Geriatria", "Ginecologia", "Hematologia", "Hepatologia", "Infectologia", "Mastologia", "Medicina da Dor", "Medicina do Trabalho", "Nefrologia", "Neurologia", "Neurocirurgia", "Nutrição", "Obstetrícia", "Oftalmologia", "Oncologia", "Oncologia Pediátrica", "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pneumologia", "Proctologia", "Psicologia", "Psiquiatria", "Radioterapia", "Reumatologia", "Serviço Social", "Terapia Ocupacional", "Urologia"
+    "Acupuntura", "Alergia e Imunologia", "Angiologia", "Cardiologia", "Cirurgia Cardíaca", "Cirurgia Geral", "Cirurgia Pediátrica", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular", "Clínica Geral", "Coloproctologia", "Dermatologia", "Endocrinologia", "Endocrinologia Pediátrica", "Fisiatria", "Fisioterapia", "Fonoaudiologia", "Gastroenterologia", "Geriatria", "Ginecologia", "Hematologia", "Hepatologia", "Infectologia", "Mastologia", "Medicina da Dor", "Medicina do Trabalho", "Nefrologia", "Neurologia", "Neurocirurgia", "Nutrição", "Obstetrícia", "Oftalmologia", "Oncologia", "Oncologia Pediátrica", "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pneumologia", "Proctologia", "Psicologia", "Psiquiatria", "Radioterapia", "Reumatologia", "Serviço Social", "Terapia Ocupacional", "Urologia",
+    "GINECOLOGIA", "ORTOPEDISTA", "CLINICO GERAL", "PEDIATRA", "CIRURGIÃO INFANTIL", "CIRURGIÃO ADULTO", "IMAGENS"
   ],
   "PROCEDIMENTO_EXAMES": [
     "Angiorressonância", "Arteriografia", "Densitometria Óssea", "Mamografia", "Ressonância Magnética", "Tomografia Computadorizada", "Ultrassonografia", "Raio-X", "PET Scan", "Cintilografia",
     "Colonoscopia", "Endoscopia", "Ecocardiograma", "Eletrocardiograma", "Eletroneuromiografia", "Holter 24h", "MAPA 24h", "Teste Ergométrico", "Cateterismo Cardíaco", "Broncoscopia", "Videolaringoscopia",
     "Exames de Sangue", "Exames Hormonais", "Exames Genéticos", "Biópsias", "Anatomopatológico",
     "Infiltração", "Bloqueio Neurológico", "Punção", "Hemodiálise", "Quimioterapia", "Radioterapia", "Fisioterapia", "Terapia Ocupacional", "Fonoaudiologia",
-    "[CIRURGIA] Bariátrica", "[CIRURGIA] Catarata", "[CIRURGIA] Cardíaca", "[CIRURGIA] Hérnia", "[CIRURGIA] Vesícula", "[CIRURGIA] Histerectomia", "[CIRURGIA] Ortopédica", "[CIRURGIA] Coluna", "[CIRURGIA] Joelho", "[CIRURGIA] Quadril", "[CIRURGIA] Ombro", "[CIRURGIA] Vascular", "[CIRURGIA] Neurocirurgia", "[CIRURGIA] Prostatectomia", "[CIRURGIA] Oncológica", "[CIRURGIA] Oftalmológica", "[CIRURGIA] Geral", "[CIRURGIA] Plástica Reparadora"
+    "[CIRURGIA] Bariátrica", "[CIRURGIA] Catarata", "[CIRURGIA] Cardíaca", "[CIRURGIA] Hérnia", "[CIRURGIA] Vesícula", "[CIRURGIA] Histerectomia", "[CIRURGIA] Ortopédica", "[CIRURGIA] Coluna", "[CIRURGIA] Joelho", "[CIRURGIA] Quadril", "[CIRURGIA] Ombro", "[CIRURGIA] Vascular", "[CIRURGIA] Neurocirurgia", "[CIRURGIA] Prostatectomia", "[CIRURGIA] Oncológica", "[CIRURGIA] Oftalmológica", "[CIRURGIA] Geral", "[CIRURGIA] Plástica Reparadora",
+    "USG", "TC", "RNM", "ECG", "DOPLLER", "OFTALMOLÓGICOS"
+  ],
+  "TIPOS_EXAME": [
+    "RNM CRANIO", "RNM PELVE", "TC FACE", "OCT", "MAPEAMENTO RETINA"
   ],
   "PRIORIDADE": [
     "Baixa", "Média", "Alta", "Urgente", "Acamado", "Cadeirante", "Pessoa com Deficiência", "Gestante", "Idoso", "Criança", "Paciente Oncológico", "Doença Rara", "Alto Risco", "Judicializado", "Vulnerabilidade Social", "Beneficiário de Programa Social"
@@ -18,21 +27,25 @@ const DB_SEED = {
   "STATUS_ATENDIMENTO": [
     "Recebido", "Em Análise", "Encaminhado", "Aguardando Vaga", "Aguardando Retorno", "Agendado", "Em Tratamento", "Resolvers", "Resolvido", "Indeferido", "Cancelado"
   ],
+  "STATUS_TITULO": [
+    "REGULAR", "CANCELADO", "SUSPENSO", "NÃO POSSUI"
+  ],
   "TIPOS_SERVICO": [
     "TROCA DE LÂMPADA", "COLETA DE ENTULHO", "CAPINA/ROÇADA", "TAPA BURACO", "OUTROS"
   ]
 };
 
-window.seedInitialData = async function() {
+window.seedInitialData = async function(silent = false) {
     console.log("Iniciando seedInitialData via botão ou auto...");
     localStorage.setItem('seed_run', 'false'); // reset the local storage just in case
     if(!window.db) {
-        alert("Firebase DB não carregado!");
+        if(!silent) alert("Firebase DB não carregado!");
         return;
     }
     try {
-        if(typeof showMessage === 'function') showMessage('Iniciando injeção de dados. Por favor, aguarde...', 'info');
+        if(!silent && typeof showMessage === 'function') showMessage('Iniciando injeção de dados. Por favor, aguarde...', 'info');
         console.log("Iniciando seed de dados oficiais...");
+        let totalAdded = 0;
         for (let chave of Object.keys(DB_SEED)) {
             const q = window.query(window.collection(window.db, 'config_selects'), window.where('chave', '==', chave));
             const snap = await window.getDocs(q);
@@ -50,6 +63,7 @@ window.seedInitialData = async function() {
                         criacao: new Date().toISOString()
                     });
                     added++;
+                    totalAdded++;
                 }
             }
             if(added > 0) {
@@ -57,19 +71,25 @@ window.seedInitialData = async function() {
             }
         }
         console.log("Seed finalizado com sucesso!");
-        if(typeof showMessage === 'function') showMessage('Listas iniciais inseridas com sucesso! Recarregando a página...', 'success');
-        setTimeout(() => window.location.reload(), 2000);
+        if(!silent && typeof showMessage === 'function') showMessage('Listas iniciais inseridas com sucesso! Recarregando a página...', 'success');
+        
+        // Dispara extração automática de dados do histórico se não rodou nesta versão
+        await window.extrairDadosParaListas(true);
+
+        if(!silent || totalAdded > 0) {
+            setTimeout(() => window.location.reload(), 2000);
+        }
     } catch(e) {
         console.error("Erro no seed:", e);
-        if(typeof showModalAlert === 'function') showModalAlert('Erro ao inserir: ' + e.message);
+        if(!silent && typeof showModalAlert === 'function') showModalAlert('Erro ao inserir: ' + e.message);
     }
 }
 
 
-window.extrairDadosParaListas = async function() {
+window.extrairDadosParaListas = async function(silent = false) {
     try {
         if(!window.db) return;
-        if(typeof showMessage === 'function') showMessage('Extraindo dados antigos para listas genéricas. Aguarde...', 'info');
+        if(!silent && typeof showMessage === 'function') showMessage('Extraindo dados antigos para listas genéricas. Aguarde...', 'info');
         
         const inDb = new Set();
         const snapConfig = await window.getDocs(window.collection(window.db, 'config_selects'));
@@ -83,7 +103,7 @@ window.extrairDadosParaListas = async function() {
         async function addIfNew(chave, valor) {
             if(!valor || typeof valor !== 'string') return;
             const normVal = valor.toUpperCase().trim();
-            if(normVal === '' || normVal === 'SELECIONE...' || normVal === 'NÃO' || normVal === 'SIM') return;
+            if(normVal === '' || normVal === '-' || normVal === 'SELECIONE...' || normVal === 'NÃO' || normVal === 'SIM' || normVal === 'OUTROS') return;
             const uid = `${chave}_${normVal}`;
             if(!inDb.has(uid)) {
                 await window.addDoc(window.collection(window.db, 'config_selects'), {
@@ -107,23 +127,34 @@ window.extrairDadosParaListas = async function() {
         const snapPac = await window.getDocs(window.collection(window.db, 'pacientes'));
         for(let doc of snapPac.docs) {
             await addIfNew('STATUS_TITULO', doc.data().status_titulo);
-            // also try to get lideranca from paciente
             if (doc.data().indicacao) await addIfNew('LIDERANCA', doc.data().indicacao);
         }
 
-        // 3. Atendimentos (LOCAL e PARCEIRO)
+        // 3. Atendimentos (LOCAL, PARCEIRO, ESPECIALIDADE, PROCEDIMENTO, CATEGORIAS, ATENDIMENTO)
         const snapAtend = await window.getDocs(window.collection(window.db, 'atendimentos'));
         for(let doc of snapAtend.docs) {
             await addIfNew('LOCAL', doc.data().local);
             await addIfNew('PARCEIRO', doc.data().parceiro);
+            await addIfNew('ESPECIALIDADE', doc.data().especialidade);
+            await addIfNew('PROCEDIMENTO_EXAMES', doc.data().procedimento);
+            await addIfNew('CATEGORIAS', doc.data().tipo_servico);
+            await addIfNew('ATENDIMENTO', doc.data().tipo);
             if (doc.data().indicacao) await addIfNew('LIDERANCA', doc.data().indicacao);
         }
 
-        if(typeof showMessage === 'function') showMessage('Extração concluída com sucesso! Recarregando...', 'success');
-        setTimeout(() => window.location.reload(), 2000);
+        // 4. Serviços Públicos (TIPOS_SERVICO)
+        try {
+            const snapServ = await window.getDocs(window.collection(window.db, 'servicos_publicos'));
+            for(let doc of snapServ.docs) {
+                await addIfNew('TIPOS_SERVICO', doc.data().tipo_servico);
+            }
+        } catch(e) {}
+
+        if(!silent && typeof showMessage === 'function') showMessage('Extração concluída com sucesso! Recarregando...', 'success');
+        if(!silent) setTimeout(() => window.location.reload(), 2000);
     } catch(e) {
         console.error(e);
-        if(typeof showModalAlert === 'function') showModalAlert('Erro ao extrair: ' + e.message);
+        if(!silent && typeof showModalAlert === 'function') showModalAlert('Erro ao extrair: ' + e.message);
     }
 };
 
@@ -155,3 +186,16 @@ window.limparDuplicadas = async function() {
     alert('Erro: ' + e.message);
   }
 };
+
+// Auto-run recuperação 1 vez por navegador na versão 6 para garantir restauração dos itens
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (window.auth && window.auth.currentUser && localStorage.getItem('recovery_v6_run') !== 'true') {
+            console.log("Iniciando auto-recuperação de opções do histórico e padrões...");
+            localStorage.setItem('recovery_v6_run', 'true');
+            if (typeof window.seedInitialData === 'function') {
+                window.seedInitialData(true);
+            }
+        }
+    }, 4000);
+});
