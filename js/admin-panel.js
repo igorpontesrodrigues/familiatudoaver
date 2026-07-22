@@ -110,12 +110,14 @@ window.carregarListaUsuarios = async function() {
 window.salvarConfigUsuario = async function(id, role) {
     try {
         await window.updateDoc(window.doc(window.db, 'usuarios', id), { perfil: role === 'admin' ? 'ADMIN' : 'padrao' });
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('ALTERAR_PERMISSÃO', 'Usuários', `Permissão do usuário ID ${id} alterada para ${role === 'admin' ? 'ADMIN' : 'Padrão'}`);
     } catch(e) { window.showModalAlert('Erro ao salvar usuário: ' + e.message); }
 };
 window.deletarUsuario = async function(id) {
     if(!await window.showModalConfirm('Deseja realmente deletar este usuário?')) return;
     try {
         await window.deleteDoc(window.doc(window.db, 'usuarios', id));
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EXCLUSÃO', 'Usuários', `Exclusão do usuário ID: ${id}`);
         window.carregarListaUsuarios();
     } catch(e) { window.showModalAlert('Erro ao deletar: ' + e.message); }
 };
@@ -176,6 +178,7 @@ window.salvarValoresBase = async function(id) {
             return;
         }
         await window.updateDoc(window.doc(window.db, 'config_selects', id), { preco_padrao: valorNum.toFixed(2) });
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EDIÇÃO_VALOR', 'Configurações (Valores)', `Valor base do item ID ${id} alterado para R$ ${valorNum.toFixed(2)}`);
         alert('Valor salvo com sucesso!');
     } catch(e) {
         console.error('Erro ao salvar valor', e);
@@ -307,6 +310,7 @@ window.adicionarNovoItemLista = async function() {
                 await window.addDoc(window.collection(window.db, 'tipos_servico'), { nome: novoNome.trim().toUpperCase() });
             } catch(e) { console.error('Erro ao sync com tipos_servico', e); }
         }
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Configurações (Listas)', `Adicionado novo item à lista ${tipo}: ${novoNome.trim().toUpperCase()}`);
         window.carregarListaAdmin();
         if(typeof carregarFiltros === 'function') carregarFiltros();
     } catch(e) { window.showModalAlert('Erro ao adicionar: ' + e.message); }
@@ -316,6 +320,7 @@ window.deletarItemLista = async function(id, col = 'config_selects') {
     if(!await window.showModalConfirm('Excluir este item permanentemente?')) return;
     try {
         await window.deleteDoc(window.doc(window.db, col, id));
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EXCLUSÃO', 'Configurações (Listas)', `Excluído item da lista ${col} (ID: ${id})`);
         window.carregarListaAdmin();
         if(typeof carregarFiltros === 'function') carregarFiltros();
     } catch(e) { alert('Erro ao deletar: ' + e.message); }
@@ -419,6 +424,7 @@ window.confirmarSubstituicao = async function() {
         if (subsIdAntigoContext) {
             await window.deleteDoc(window.doc(window.db, 'config_selects', subsIdAntigoContext));
         }
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('MESCLAGEM', 'Configurações (Listas)', `Substituição em massa: "${subsNomeAntigoContext || subsIdAntigoContext}" por "${novoNome}" (Lista: ${subsTipoContext})`);
         window.fecharSubstituirItemLista();
         if (typeof window.carregarListaAdmin === 'function') window.carregarListaAdmin();
         if (typeof window.carregarLiderancasAdmin === 'function') window.carregarLiderancasAdmin();
@@ -641,6 +647,7 @@ window.adicionarNovoItemListaGenerico = async function(nome, tipo) {
     if(!nome || !tipo) return;
     try {
         await window.addDoc(window.collection(window.db, 'config_selects'), { tipo: tipo, valor: nome.toUpperCase(), criacao: new Date().toISOString() });
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Configurações (Listas)', `Adicionado item à lista ${tipo}: ${nome.toUpperCase()}`);
         if(typeof showModalAlert === 'function') showModalAlert('Adicionado à lista oficial!', 'success');
         if(typeof window.carregarListaAdmin === 'function') window.carregarListaAdmin();
     } catch(e) {
@@ -652,6 +659,7 @@ window.adicionarLiderancaOficial = async function(nome) {
     if(!nome) return;
     try {
         await window.addDoc(window.collection(window.db, 'config_selects'), { tipo: 'LIDERANCA', valor: nome.toUpperCase(), criacao: new Date().toISOString() });
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Configurações (Listas)', `Adicionada nova liderança oficial: ${nome.toUpperCase()}`);
         showMessage('Adicionado à lista oficial!', 'success');
         carregarLiderancasAdmin();
     } catch(e) {
@@ -862,6 +870,7 @@ window.salvarCorrecaoDocs = async function(id, index) {
     
     try {
         await window.updateDoc(window.doc(window.db, 'pacientes', id), updates);
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EDIÇÃO_RÁPIDA', 'Munícipes (Auditoria)', `Edição rápida via Auditoria de Cadastro - Paciente ID: ${id}`);
         
         // Remove a linha da tabela com animação
         const tr = document.getElementById(`tr-audit-${index}`);

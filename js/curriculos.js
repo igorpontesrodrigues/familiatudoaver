@@ -304,6 +304,9 @@ async function salvarCurriculo(e) {
             await window.addDoc(window.collection(window.db, "curriculos"), data);
         }
         window.showModalAlert("Currículo salvo com sucesso!");
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria(id ? 'EDIÇÃO' : 'CRIAÇÃO', 'Currículos', `${id ? 'Edição de' : 'Novo'} currículo - Candidato: ${data.nome} (Cargo: ${data.cargo_proposto || '-'}) | Status: ${data.status}`);
+        }
         carregarCurriculos();
         switchTab('lista-curriculos');
     } catch(err) {
@@ -318,8 +321,13 @@ async function salvarCurriculo(e) {
 
 async function deletarCurriculo(id) {
     if(!await window.showModalConfirm("Deseja realmente excluir este currículo?", "Esta ação não pode ser desfeita.")) return;
+    const cur = typeof todosCurriculos !== 'undefined' ? todosCurriculos.find(c => c.id === id) : null;
+    const info = cur ? `${cur.nome || ''} (Cargo: ${cur.cargo_proposto || '-'})` : `ID: ${id}`;
     try {
         await window.deleteDoc(window.doc(window.db, "curriculos", id));
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria('EXCLUSÃO', 'Currículos', `Exclusão de currículo - ${info}`);
+        }
         carregarCurriculos();
     } catch(err) { window.showModalAlert("Erro ao excluir: " + err.message); }
 }

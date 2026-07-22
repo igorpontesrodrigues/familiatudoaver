@@ -330,6 +330,9 @@ async function salvarAgenda(e) {
         fecharModalAgenda();
         carregarAgenda();
         if(typeof showModalAlert === 'function') showModalAlert("Compromisso salvo com sucesso!");
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria(id ? 'EDIÇÃO' : 'CRIAÇÃO', 'Agenda', `${id ? 'Edição de' : 'Novo'} compromisso - Munícipe/Título: ${dados.municipe_nome || dados.titulo || '-'} | Data: ${dados.data_hora_inicio || '-'}`);
+        }
     } catch (err) {
         console.error("Erro ao salvar agenda:", err);
         if(typeof showModalAlert === 'function') showModalAlert("Erro ao salvar compromisso: " + err.message);
@@ -351,8 +354,14 @@ async function excluirCompromisso(id) {
         if (!confirm("Tem certeza que deseja excluir este compromisso?")) return;
     }
 
+    const comp = typeof todosCompromissos !== 'undefined' ? todosCompromissos.find(c => c.id === id) : null;
+    const info = comp ? `${comp.municipe_nome || comp.titulo || ''} (${comp.data_hora_inicio || '-'})` : `ID: ${id}`;
+
     try {
         await window.deleteDoc(window.doc(window.db, 'agenda', id));
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria('EXCLUSÃO', 'Agenda', `Exclusão de compromisso - ${info}`);
+        }
         carregarAgenda();
     } catch (e) {
         console.error("Erro ao excluir agenda:", e);

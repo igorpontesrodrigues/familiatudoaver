@@ -254,6 +254,7 @@ async function adicionarTipoServico() {
         input.value = '';
         renderListaTiposServico();
         carregarTiposServico();
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Serviços Públicos', `Adicionado novo Tipo de Serviço: ${nome}`);
     } catch(e) { window.showModalAlert('Erro ao adicionar tipo: ' + e.message); }
 }
 
@@ -263,6 +264,7 @@ async function excluirTipoServico(id, nome, col = 'tipos_servico') {
         await window.deleteDoc(window.doc(window.db, col, id));
         renderListaTiposServico();
         carregarTiposServico();
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EXCLUSÃO', 'Serviços Públicos', `Excluído Tipo de Serviço: ${nome}`);
     } catch(e) { window.showModalAlert('Erro ao excluir: ' + e.message); }
 }
 
@@ -279,6 +281,7 @@ async function adicionarTipoServicoRapido() {
         await carregarTiposServico();
         const sel = document.getElementById('servico_tipo');
         if (sel) sel.value = nomeFmt;
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CRIAÇÃO', 'Serviços Públicos', `Adicionado novo Tipo de Serviço (Rápido): ${nomeFmt}`);
         if (typeof showModalAlert === 'function') showModalAlert(`Tipo "${nomeFmt}" adicionado e selecionado!`);
     } catch(e) {
         if (typeof showModalAlert === 'function') showModalAlert('Erro ao adicionar tipo: ' + e.message);
@@ -451,6 +454,9 @@ async function salvarServicoPublico(e) {
             await window.addDoc(window.collection(window.db, "servicos_publicos"), data);
         }
         window.showModalAlert("Serviço salvo com sucesso!");
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria(id ? 'EDIÇÃO' : 'CRIAÇÃO', 'Serviços Públicos', `${id ? 'Edição de' : 'Nova'} solicitação - Solicitante: ${data.solicitante_nome} (Protocolo: ${data.protocolo_numero || '-'}) | Tipo: ${data.tipo_servico}`);
+        }
         carregarServicosPublicos();
         switchTab('lista-servicos');
     } catch(err) {
@@ -466,8 +472,14 @@ async function salvarServicoPublico(e) {
 async function deletarServico(id) {
     if(!await window.showModalConfirm("Deseja realmente excluir este serviço?", "Esta ação não pode ser desfeita.")) return;
     
+    const servico = typeof todosServicos !== 'undefined' ? todosServicos.find(s => s.id === id) : null;
+    const info = servico ? `${servico.solicitante_nome || ''} (Protocolo: ${servico.protocolo_numero || '-'})` : `ID: ${id}`;
+
     try {
         await window.deleteDoc(window.doc(window.db, "servicos_publicos", id));
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria('EXCLUSÃO', 'Serviços Públicos', `Exclusão de solicitação de serviço - ${info}`);
+        }
         carregarServicosPublicos();
     } catch(err) {
         window.showModalAlert("Erro ao excluir: " + err.message);

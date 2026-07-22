@@ -26,6 +26,7 @@ window.apagarCpfMoverPreCadastro = async function(id, index) {
             cpf: '',
             pre_cadastro: true
         });
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('CORREÇÃO_CPF', 'Munícipes (Auditoria)', `CPF inválido removido e movido para Pré Cadastros - Paciente ID: ${id}`);
         const tr = document.getElementById(`tr-audit-${index}`);
         if (tr) {
             tr.classList.add('bg-amber-50', 'opacity-50');
@@ -81,6 +82,7 @@ window.apagarTodosCpfInvalidosMassa = async function(btn) {
                 cpf: '',
                 pre_cadastro: true
             });
+            if(typeof window.logAuditoria === 'function') window.logAuditoria('CORREÇÃO_CPF_MASSA', 'Munícipes (Auditoria)', `CPF inválido removido em massa - Paciente ID: ${alvo.id}`);
             sucessos++;
             const tr = document.getElementById(`tr-audit-${alvo.index}`);
             if (tr) tr.remove();
@@ -157,6 +159,7 @@ window.buscarTodosCepsReversoMassa = async function(btn) {
                             logradouro: (arr[0].logradouro || d.logradouro || '').toUpperCase(),
                             bairro: (arr[0].bairro || d.bairro || '').toUpperCase()
                         });
+                        if(typeof window.logAuditoria === 'function') window.logAuditoria('BUSCA_CEP_MASSA', 'Munícipes (Auditoria)', `CEP ${cepFmt} preenchido via busca reversa nos Correios - Paciente ID: ${alvo.id}`);
                         achados++;
                         const tr = document.getElementById(`tr-audit-${alvo.index}`);
                         if (tr) tr.classList.add('bg-emerald-50');
@@ -199,6 +202,7 @@ window.buscarCepReversoAuditoria = async function(id, index) {
                 logradouro: (arr[0].logradouro || d.logradouro || '').toUpperCase(),
                 bairro: (arr[0].bairro || d.bairro || '').toUpperCase()
             });
+            if(typeof window.logAuditoria === 'function') window.logAuditoria('BUSCA_CEP', 'Munícipes (Auditoria)', `CEP ${cepFmt} preenchido via busca reversa - Paciente ID: ${id}`);
             window.showModalAlert(`CEP encontrado (${cepFmt}) e salvo no cadastro!`);
         } else {
             window.showModalAlert("Os Correios não retornaram um CEP exato para este endereço. Digite o CEP manualmente.");
@@ -619,6 +623,7 @@ window.salvarCorrecaoDocs = async function(id, index, silent = false) {
     
     try {
         await window.updateDoc(window.doc(window.db, 'pacientes', id), updates);
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EDIÇÃO_AUDITORIA', 'Munícipes (Auditoria)', `Edição rápida na ferramenta de auditoria - Paciente ID: ${id}`);
         
         if (allOk) {
             const tr = document.getElementById(`tr-audit-${index}`);
@@ -945,6 +950,7 @@ window.confirmarAplicarPadronizacaoBanco = async function() {
             await window.updateDoc(window.doc(window.db, 'pacientes', item.id), item.updates);
             count++;
         }
+        if(typeof window.logAuditoria === 'function' && count > 0) window.logAuditoria('PADRONIZAÇÃO_MASSA', 'Munícipes (Auditoria)', `Padronização em massa aplicada em ${count} cadastro(s)`);
         window.fecharModalPreviewPadronizacao();
         window._pendentePadronizacao = [];
         window.showModalAlert(`Sucesso! ${count} cadastro(s) foram padronizados e salvos no banco de dados.`);
@@ -1089,6 +1095,7 @@ window.apagarOrfao = async function(id, index) {
 
     try {
         await window.deleteDoc(window.doc(window.db, 'atendimentos', id));
+        if(typeof window.logAuditoria === 'function') window.logAuditoria('EXCLUSÃO_ÓRFÃO', 'Atendimentos (Auditoria)', `Exclusão de atendimento órfão ID: ${id}`);
         const tr = document.getElementById(`tr-orfao-${index}`);
         if (tr) {
             tr.classList.add('bg-red-50', 'opacity-50');
