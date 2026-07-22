@@ -86,9 +86,9 @@ function renderizarPainelAniversariantes() {
             const firstName = p.nome.split(' ')[0];
             let msg = '';
             if (tipo === 'hoje') {
-                msg = "Olá " + firstName + "! Parabéns pelo seu aniversário! Que o seu dia seja repleto de alegrias, saúde e paz. Um grande abraço! ( Connecta )";
+                msg = `🎉 🥳 *Olá, ${firstName}!* 🎂 ✨\n\nHoje é um dia super especial e não poderíamos deixar de passar aqui para te parabenizar pelo seu aniversário! 🎈 🎁\n\nDesejamos que o seu novo ciclo seja repleto de muita saúde, alegrias, prosperidade, paz e realizações. Que você continue iluminando a todos ao seu redor e que todos os seus sonhos se realizem! 🌟 🙌\n\nUm grande e caloroso abraço de toda a nossa equipe! ❤️\n\n— *Família Tudo a Ver* ✨`;
             } else if (tipo === 'recente') {
-                msg = "Olá " + firstName + "! Passando para desejar um feliz aniversário atrasado! Que você tenha muita saúde, paz e alegrias neste novo ciclo. Um grande abraço! ( Connecta )";
+                msg = `🎈 ✨ *Olá, ${firstName}!* 🎂 🎉\n\nPassando aqui para desejar um feliz aniversário (um pouquinho atrasado, mas de todo o coração)! 🥳 🎁\n\nEsperamos que o seu dia tenha sido maravilhoso e que este novo ciclo que se iniciou traga muita saúde, paz, conquistas, amor e alegrias para você e toda a sua família! 🌟 🙌\n\nReceba um grande abraço carinhoso da nossa equipe! ❤️\n\n— *Família Tudo a Ver* ✨`;
             }
             const linkWhats = "https://api.whatsapp.com/send/?phone=55" + p.tel1.replace(/\D/g, '') + "&text=" + encodeURIComponent(msg);
             btnWhatsHtml = `
