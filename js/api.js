@@ -24,10 +24,13 @@ const VALORES_PADRAO = {
     'PROCEDIMENTO_EXAMES': [],
     'TIPOS_EXAME': [],
     'STATUS_TITULO': [],
+    'STATUS_ATENDIMENTO': [],
+    'PRIORIDADE': [],
     'TIPOS_SERVICO': [],
     'LIDERANCA': [],
     'LOCAL': [],
-    'PARCEIRO': []
+    'PARCEIRO': [],
+    'INDICACAO': []
 };
 window.VALORES_PADRAO = VALORES_PADRAO;
 

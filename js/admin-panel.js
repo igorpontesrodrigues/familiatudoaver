@@ -924,16 +924,33 @@ window.atualizarOpcoesSelectAdmin = function() {
     const sel = document.getElementById('admin-select-lista');
     if(!sel) return;
     
-    const padroes = window.VALORES_PADRAO ? Object.keys(window.VALORES_PADRAO) : ['CATEGORIAS', 'ESPECIALIDADE', 'PROCEDIMENTO_EXAMES', 'PRIORIDADE', 'STATUS_ATENDIMENTO', 'STATUS_TITULO', 'LIDERANCA', 'LOCAL', 'PARCEIRO', 'TIPOS_SERVICO'];
-    if (!padroes.includes('TIPOS_SERVICO')) padroes.push('TIPOS_SERVICO');
+    const padroesFixos = ['CATEGORIAS', 'ATENDIMENTO', 'ESPECIALIDADE', 'PROCEDIMENTO_EXAMES', 'TIPOS_EXAME', 'PRIORIDADE', 'STATUS_ATENDIMENTO', 'STATUS_TITULO', 'LIDERANCA', 'LOCAL', 'PARCEIRO', 'TIPOS_SERVICO', 'INDICACAO'];
+    const padroesVal = window.VALORES_PADRAO ? Object.keys(window.VALORES_PADRAO) : [];
     const extras = window.opcoesFiltros ? Object.keys(window.opcoesFiltros) : [];
     
-    const chaves = new Set([...padroes, ...extras, 'INDICACAO']);
+    const chaves = new Set([...padroesFixos, ...padroesVal, ...extras]);
     const currentValue = sel.value;
+    
+    const nomesAmigaveis = {
+        'STATUS_ATENDIMENTO': 'STATUS_ATENDIMENTO (Status Inicial)',
+        'PRIORIDADE': 'PRIORIDADE (Prioridade / Vulnerabilidade)',
+        'STATUS_TITULO': 'STATUS_TITULO (Situação do Título)',
+        'PROCEDIMENTO_EXAMES': 'PROCEDIMENTO_EXAMES (Procedimentos / Exames)',
+        'TIPOS_SERVICO': 'TIPOS_SERVICO (Serviços Públicos)',
+        'INDICACAO': 'INDICACAO (Indicação / Liderança)',
+        'LIDERANCA': 'LIDERANCA (Lideranças)',
+        'PARCEIRO': 'PARCEIRO (Parceiro / Médico)',
+        'LOCAL': 'LOCAL (Local de Atendimento)',
+        'CATEGORIAS': 'CATEGORIAS (Categorias de Atendimento)',
+        'ATENDIMENTO': 'ATENDIMENTO (Tipos de Atendimento)',
+        'ESPECIALIDADE': 'ESPECIALIDADE (Especialidades Médicas)',
+        'TIPOS_EXAME': 'TIPOS_EXAME (Tipos Específico HO)'
+    };
     
     let html = '<option value="">Selecione uma lista...</option>';
     Array.from(chaves).sort().forEach(c => {
-        html += `<option value="${c}">${c}</option>`;
+        const label = nomesAmigaveis[c] || c;
+        html += `<option value="${c}">${label}</option>`;
     });
     
     sel.innerHTML = html;
