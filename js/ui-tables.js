@@ -838,6 +838,31 @@ async function mudarFiltroListagem() {
         containerTxt.classList.remove('hidden');
         txtBusca.disabled = true;
         txtBusca.placeholder = tipo === 'pendentes' ? "Todos os pendentes..." : "Todos os registros...";
+    } else if (tipo === 'concluidos_procedimento' || tipo === 'concluidos_especialidade') {
+        const campo = tipo === 'concluidos_procedimento' ? 'Procedimento / Exame' : 'Especialidade';
+        lblFiltro.innerText = `Filtrar por ${campo}`;
+        if (selSelect) {
+            selSelect.classList.remove('hidden');
+            selSelect.innerHTML = `<option value="">-- TODOS --</option>`;
+
+            if (!todosAtendimentos || todosAtendimentos.length === 0) {
+                if (typeof carregarListaAtendimentos === 'function') await carregarListaAtendimentos();
+            }
+
+            const field = tipo === 'concluidos_procedimento' ? 'procedimento' : 'especialidade';
+            const concluidos = (todosAtendimentos || []).filter(a => {
+                const s = (a.status || '').toUpperCase();
+                return s === 'RESOLVIDO' || s === 'CONCLUIDO' || s === 'CONCLUÍDO' || s === 'RESOLVIDO' || s === 'FINALIZADO';
+            });
+            const unique = new Set();
+            concluidos.forEach(a => {
+                const v = (a[field] || '').trim().toUpperCase();
+                if (v && v !== '-') unique.add(v);
+            });
+            Array.from(unique).sort().forEach(v => {
+                selSelect.innerHTML += `<option value="${v}">${v}</option>`;
+            });
+        }
     } else if (tipo === 'bairros' || tipo === 'indicacao') {
         lblFiltro.innerText = tipo === 'bairros' ? "Selecione o Bairro" : "Selecione a Indicação";
         if (selSelect) {
@@ -1013,6 +1038,58 @@ async function gerarListagem() {
                 const dataFmt = a.data_risco ? a.data_risco.split('-').reverse().join('/') : '-';
                 const cat = (a.tipo_servico || a.tipo || '-').toUpperCase();
                 html += `<tr><td class="px-6 py-3 font-bold text-slate-700">${a.nome_paciente || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.cpf_paciente||''}</span></td><td class="px-6 py-3"><span class="inline-flex items-center px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">${cat}</span></td><td class="px-6 py-3">${a.procedimento||'-'}<br><span class="text-xs text-slate-500">${a.local||'-'}</span></td><td class="px-6 py-3 text-rose-500 font-bold text-sm">${dataFmt}</td></tr>`;
+            });
+        }
+    }
+    else if (tipo === 'concluidos_procedimento' || tipo === 'concluidos_especialidade') {
+        const isProcedimento = tipo === 'concluidos_procedimento';
+        const field = isProcedimento ? 'procedimento' : 'especialidade';
+        const fieldLabel = isProcedimento ? 'Procedimento / Exame' : 'Especialidade';
+
+        header = `<tr><th class="px-6 py-4">Munícipe (CPF)</th><th class="px-6 py-4">${fieldLabel}</th><th class="px-6 py-4">Categoria / Especialidade</th><th class="px-6 py-4">Data de Conclusão</th></tr>`;
+
+        const statusConcluido = s => {
+            const u = (s || '').toUpperCase();
+            return u === 'RESOLVIDO' || u === 'CONCLUIDO' || u === 'CONCLUÍDO' || u === 'FINALIZADO';
+        };
+
+        let list = (todosAtendimentos || []).filter(a => statusConcluido(a.status));
+
+        // Filtra pelo valor selecionado no select (se houver)
+        const filtroSel = (document.getElementById('inp-filtro-secundario-select')?.value || '').trim().toUpperCase();
+        if (filtroSel) {
+            list = list.filter(a => (a[field] || '').trim().toUpperCase() === filtroSel);
+        }
+
+        // Monta resumo por valor do campo
+        const summary = {};
+        list.forEach(a => {
+            const val = (a[field] || 'NÃO INFORMADO').trim().toUpperCase();
+            summary[val] = (summary[val] || 0) + 1;
+        });
+
+        let summaryHtml = `<div class="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
+        Object.keys(summary).sort().forEach(val => {
+            summaryHtml += `<div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-center shadow-sm">
+                <div class="text-xl font-black text-emerald-600 leading-tight">${summary[val]}</div>
+                <div class="text-[9px] uppercase text-emerald-800 font-bold tracking-wide mt-1">${val}</div>
+            </div>`;
+        });
+        summaryHtml += `</div>`;
+
+        list.sort((a, b) => (a.nome_paciente || '').localeCompare(b.nome_paciente || ''));
+
+        if (list.length === 0) {
+            html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento concluído encontrado.</td></tr>`;
+        } else {
+            html = `<tr><td colspan="4" class="p-4 bg-white border-b border-slate-100">${summaryHtml}</td></tr>`;
+            list.forEach(a => {
+                // Data de conclusão: tenta data_resolucao, data_fechamento, ou data_abertura
+                const dataRaw = a.data_resolucao || a.data_fechamento || a.data_conclusao || a.updated_at || a.data_abertura || '';
+                const dataFmt = dataRaw ? (dataRaw.includes('T') ? dataRaw.split('T')[0].split('-').reverse().join('/') : dataRaw.split('-').reverse().join('/')) : '-';
+                const valCampo = (a[field] || '-').toUpperCase();
+                const secundario = isProcedimento ? (a.especialidade || a.tipo_servico || '-') : (a.tipo_servico || a.tipo || '-');
+                html += `<tr><td class="px-6 py-3 font-bold text-slate-700">${a.nome_paciente || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.cpf_paciente || ''}</span></td><td class="px-6 py-3"><span class="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">${valCampo}</span></td><td class="px-6 py-3 text-slate-500 text-sm">${secundario}</td><td class="px-6 py-3 text-emerald-600 font-bold text-sm">${dataFmt}</td></tr>`;
             });
         }
     }
