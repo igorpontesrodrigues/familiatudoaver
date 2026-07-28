@@ -242,14 +242,43 @@ function imprimirFicha() {
         return parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
-    // Garante sincronia do cache com todos os atendimentos na memória antes de imprimir
-    if (p && (p.cpf || p.id) && typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+    // Sincroniza o cache com atendimentos, currículos e serviços
+    if (p && (p.cpf || p.id)) {
         const cpfP = String(p.cpf || '').replace(/\D/g, '');
-        window.historicoAtualCache = todosAtendimentos.filter(a => {
-            const aCpf = String(a.cpf_paciente || a.cpf || '').replace(/\D/g, '');
-            return (cpfP && aCpf === cpfP) || (p.id && String(a.paciente_id || '') === String(p.id));
+        const nomeP = (p.nome || '').trim().toUpperCase();
+        
+        let arrAtendimentos = [];
+        if (typeof todosAtendimentos !== 'undefined' && Array.isArray(todosAtendimentos)) {
+            arrAtendimentos = todosAtendimentos.filter(a => {
+                const aCpf = String(a.cpf_paciente || a.cpf || '').replace(/\D/g, '');
+                return (cpfP && aCpf === cpfP) || (p.id && String(a.paciente_id || '') === String(p.id));
+            }).map(item => ({ ...item, _tipoRegistro: 'atendimento' }));
+        }
+
+        let arrCurriculos = [];
+        if (typeof todosCurriculos !== 'undefined' && Array.isArray(todosCurriculos)) {
+            arrCurriculos = todosCurriculos.filter(c => {
+                const cCpf = String(c.cpf || '').replace(/\D/g, '');
+                const cNome = (c.nome || '').trim().toUpperCase();
+                return (cpfP && cCpf === cpfP) || (nomeP && cNome === nomeP);
+            }).map(item => ({ ...item, _tipoRegistro: 'curriculo' }));
+        }
+
+        let arrServicos = [];
+        if (typeof todosServicos !== 'undefined' && Array.isArray(todosServicos)) {
+            arrServicos = todosServicos.filter(s => {
+                const sCpf = String(s.cpf || s.cpf_municipe || '').replace(/\D/g, '');
+                const sNome = (s.nome_municipe || s.nome || '').trim().toUpperCase();
+                return (cpfP && sCpf === cpfP) || (nomeP && sNome === nomeP);
+            }).map(item => ({ ...item, _tipoRegistro: 'servico' }));
+        }
+
+        window.historicoAtualCache = [...arrAtendimentos, ...arrCurriculos, ...arrServicos];
+        window.historicoAtualCache.sort((a,b) => {
+            const dA = a.data_criacao || a.data_abertura || a.data_entrada || a.data_solicitacao || '2000-01-01';
+            const dB = b.data_criacao || b.data_abertura || b.data_entrada || b.data_solicitacao || '2000-01-01';
+            return new Date(dB) - new Date(dA);
         });
-        window.historicoAtualCache.sort((a,b) => new Date(b.data_criacao || b.data_abertura || '2000-01-01') - new Date(a.data_criacao || a.data_abertura || '2000-01-01'));
     }
 
     // Gera o HTML do Histórico se houver dados em cache
@@ -276,23 +305,47 @@ function imprimirFicha() {
         `;
         
         window.historicoAtualCache.forEach(h => {
-            const dataAberturaFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
-            const catTipo = `${h.tipo_servico || ''}<br><span style="color:#666; font-size:8px">${h.tipo || ''}</span>`;
-            const espProc = `<b>${h.especialidade || ''}</b><br>${h.procedimento || ''}`;
-            const localPront = `<b>${h.local || '-'}</b>${h.prontuario ? `<br>Pront: ${h.prontuario}` : ''}`;
+            const tipo = h._tipoRegistro || 'atendimento';
             
+            let dataAberturaFmt = '-';
+            let catTipo = '';
+            let espProc = '';
+            let localPront = '';
             let agendamentoFmt = '-';
             let diasEspera = '';
-            if (h.data_marcacao) {
-                agendamentoFmt = h.data_marcacao.split('-').reverse().join('/');
-                if (h.data_abertura) {
-                    const diff = Math.ceil((new Date(h.data_marcacao) - new Date(h.data_abertura)) / (1000 * 60 * 60 * 24));
-                    if (diff >= 0) diasEspera = `<br><span style="color:#888; font-size:8px">(${diff} dias de espera)</span>`;
-                }
-            }
+            let valorFloat = 0;
+            let obsText = '';
 
-            const valorFloat = parseFloat(h.valor) || 0;
-            totalGeral += valorFloat;
+            if (tipo === 'atendimento') {
+                dataAberturaFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
+                catTipo = `${h.tipo_servico || ''}<br><span style="color:#666; font-size:8px">${h.tipo || ''}</span>`;
+                espProc = `<b>${h.especialidade || ''}</b><br>${h.procedimento || ''}`;
+                localPront = `<b>${h.local || '-'}</b>${h.prontuario ? `<br>Pront: ${h.prontuario}` : ''}`;
+                if (h.data_marcacao) {
+                    agendamentoFmt = h.data_marcacao.split('-').reverse().join('/');
+                    if (h.data_abertura) {
+                        const diff = Math.ceil((new Date(h.data_marcacao) - new Date(h.data_abertura)) / (1000 * 60 * 60 * 24));
+                        if (diff >= 0) diasEspera = `<br><span style="color:#888; font-size:8px">(${diff} dias de espera)</span>`;
+                    }
+                }
+                valorFloat = parseFloat(h.valor) || 0;
+                totalGeral += valorFloat;
+                obsText = h.obs_atendimento || '';
+            } else if (tipo === 'curriculo') {
+                const dataRaw = (h.data_entrada || h.data_criacao || '').split('T')[0];
+                dataAberturaFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
+                catTipo = `CURRÍCULO`;
+                espProc = `<b>${h.cargo_proposto || '-'}</b>`;
+                localPront = `CNH: ${h.cnh || '-'}<br>Indicação: ${h.indicacao || '-'}`;
+                obsText = h.observacoes || '';
+            } else if (tipo === 'servico') {
+                const dataRaw = (h.data_solicitacao || h.data_criacao || '').split('T')[0];
+                dataAberturaFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
+                catTipo = `SERVIÇO PÚBLICO`;
+                espProc = `<b>${h.tipo_servico || h.servico || '-'}</b>`;
+                localPront = `Órgão: ${h.orgao || '-'}<br>Prot: ${h.protocolo || '-'}`;
+                obsText = h.observacoes || h.obs || '';
+            }
 
             historyHtml += `
                 <tr style="${styleTr}">
@@ -302,9 +355,9 @@ function imprimirFicha() {
                     <td style="${styleTd}">${catTipo}</td>
                     <td style="${styleTd}">${espProc}</td>
                     <td style="${styleTd}">${localPront}</td>
-                    <td style="${styleTdRight}">${money(valorFloat)}</td>
+                    <td style="${styleTdRight}">${tipo === 'atendimento' ? money(valorFloat) : '-'}</td>
                 </tr>
-                ${h.obs_atendimento ? `<tr style="${styleTr}"><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${h.obs_atendimento}</td></tr>` : ''}
+                ${obsText ? `<tr style="${styleTr}"><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${obsText}</td></tr>` : ''}
             `;
         });
 
@@ -734,7 +787,7 @@ async function verHistoricoCompleto(p) {
         });
 
         history.sort((a,b) => new Date(b.data_criacao || b.data_abertura || '2000-01-01') - new Date(a.data_criacao || a.data_abertura || '2000-01-01'));
-        window.historicoAtualCache = history;
+        window.historicoAtualCache = allItems;
 
         if(allItems.length === 0) {
             timeline.innerHTML = '<p class="text-slate-400 pl-4">Nenhum registro encontrado para este munícipe.</p>';
