@@ -1012,28 +1012,12 @@ async function gerarListagem() {
     else if (tipo === 'pendentes') {
         header = `<tr><th class="px-6 py-4">Munícipe (CPF)</th><th class="px-6 py-4">Categoria</th><th class="px-6 py-4">Procedimento / Local</th><th class="px-6 py-4">Data Risco</th></tr>`;
         const list = todosAtendimentos.filter(a => a.status === 'PENDENTE');
-        
-        const summary = {};
-        list.forEach(a => {
-            const cat = (a.tipo_servico || a.tipo || 'OUTROS').trim().toUpperCase();
-            summary[cat] = (summary[cat] || 0) + 1;
-        });
-        
-        let summaryHtml = `<div class="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
-        Object.keys(summary).sort().forEach(cat => {
-            summaryHtml += `<div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-center shadow-sm">
-                <div class="text-xl font-black text-amber-600 leading-tight">${summary[cat]}</div>
-                <div class="text-[9px] uppercase text-amber-800 font-bold tracking-wide mt-1">${cat}</div>
-            </div>`;
-        });
-        summaryHtml += `</div>`;
 
         list.sort((a,b) => (a.nome_paciente || '').localeCompare(b.nome_paciente || ''));
 
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento pendente.</td></tr>`;
         } else {
-            html = `<tr><td colspan="4" class="p-4 bg-white border-b border-slate-100">${summaryHtml}</td></tr>`;
             list.forEach(a => {
                 const dataFmt = a.data_risco ? a.data_risco.split('-').reverse().join('/') : '-';
                 const cat = (a.tipo_servico || a.tipo || '-').toUpperCase();
@@ -1055,36 +1039,17 @@ async function gerarListagem() {
 
         let list = (todosAtendimentos || []).filter(a => statusConcluido(a.status));
 
-        // Filtra pelo valor selecionado no select (se houver)
         const filtroSel = (document.getElementById('inp-filtro-secundario-select')?.value || '').trim().toUpperCase();
         if (filtroSel) {
             list = list.filter(a => (a[field] || '').trim().toUpperCase() === filtroSel);
         }
-
-        // Monta resumo por valor do campo
-        const summary = {};
-        list.forEach(a => {
-            const val = (a[field] || 'NÃO INFORMADO').trim().toUpperCase();
-            summary[val] = (summary[val] || 0) + 1;
-        });
-
-        let summaryHtml = `<div class="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">`;
-        Object.keys(summary).sort().forEach(val => {
-            summaryHtml += `<div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-center shadow-sm">
-                <div class="text-xl font-black text-emerald-600 leading-tight">${summary[val]}</div>
-                <div class="text-[9px] uppercase text-emerald-800 font-bold tracking-wide mt-1">${val}</div>
-            </div>`;
-        });
-        summaryHtml += `</div>`;
 
         list.sort((a, b) => (a.nome_paciente || '').localeCompare(b.nome_paciente || ''));
 
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento concluído encontrado.</td></tr>`;
         } else {
-            html = `<tr><td colspan="4" class="p-4 bg-white border-b border-slate-100">${summaryHtml}</td></tr>`;
             list.forEach(a => {
-                // Data de conclusão: tenta data_resolucao, data_fechamento, ou data_abertura
                 const dataRaw = a.data_resolucao || a.data_fechamento || a.data_conclusao || a.updated_at || a.data_abertura || '';
                 const dataFmt = dataRaw ? (dataRaw.includes('T') ? dataRaw.split('T')[0].split('-').reverse().join('/') : dataRaw.split('-').reverse().join('/')) : '-';
                 const valCampo = (a[field] || '-').toUpperCase();
