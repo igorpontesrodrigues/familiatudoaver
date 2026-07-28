@@ -692,6 +692,10 @@ window.selecionarPacienteAtendimento = function(p) {
     document.getElementById('hidden_cpf').value = p.cpf || '';
     document.getElementById('hidden_nome').value = p.nome;
     document.getElementById('busca_cpf').value = p.cpf || p.nome;
+
+    // Limpa todos os campos do formulário antes de mostrar (evita dados do paciente anterior)
+    if (typeof resetFormAtendimento === 'function') resetFormAtendimento(true);
+
     document.getElementById('resto-form-atendimento').classList.remove('hidden');
     if(typeof lucide !== 'undefined') lucide.createIcons();
 };

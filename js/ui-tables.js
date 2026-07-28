@@ -227,13 +227,14 @@ function imprimirFicha() {
     // Estilos inline (mesmos da ficha em branco para consistência)
     const styleLabel = "display: block; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;";
     const styleValue = "border-bottom: 1px solid #333; min-height: 20px; width: 100%; margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #000; padding-bottom: 2px;";
-    const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px;";
+    const styleSection = "margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 15px; page-break-inside: avoid; break-inside: avoid;";
     const styleTitle = "margin-top: 0; font-size: 14px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;";
     // Estilos da Tabela de Histórico
     const styleTable = "width: 100%; border-collapse: collapse; font-size: 10px;";
-    const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase; font-size: 9px;";
-    const styleTd = "border-bottom: 1px solid #eee; padding: 4px; font-size: 9px;";
-    const styleTdRight = "border-bottom: 1px solid #eee; padding: 4px; text-align: right; font-size: 9px;";
+    const styleTh = "border-bottom: 1px solid #000; text-align: left; padding: 4px; font-weight: bold; text-transform: uppercase; font-size: 9px; background-color: #f1f5f9;";
+    const styleTd = "border-bottom: 1px solid #eee; padding: 4px; font-size: 9px; page-break-inside: avoid; break-inside: avoid;";
+    const styleTdRight = "border-bottom: 1px solid #eee; padding: 4px; text-align: right; font-size: 9px; page-break-inside: avoid; break-inside: avoid;";
+    const styleTr = "page-break-inside: avoid; break-inside: avoid;";
 
     const safe = (val) => val || '-';
     const money = (val) => {
@@ -294,7 +295,7 @@ function imprimirFicha() {
             totalGeral += valorFloat;
 
             historyHtml += `
-                <tr>
+                <tr style="${styleTr}">
                     <td style="${styleTd}">${dataAberturaFmt}</td>
                     <td style="${styleTd}">${agendamentoFmt}${diasEspera}</td>
                     <td style="${styleTd}"><b>${h.status || '-'}</b></td>
@@ -303,7 +304,7 @@ function imprimirFicha() {
                     <td style="${styleTd}">${localPront}</td>
                     <td style="${styleTdRight}">${money(valorFloat)}</td>
                 </tr>
-                ${h.obs_atendimento ? `<tr><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc;">Obs: ${h.obs_atendimento}</td></tr>` : ''}
+                ${h.obs_atendimento ? `<tr style="${styleTr}"><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${h.obs_atendimento}</td></tr>` : ''}
             `;
         });
 
@@ -323,11 +324,25 @@ function imprimirFicha() {
     }
 
     const html = `
+        <style>
+            @media print {
+                @page { margin: 15mm 12mm; size: A4 portrait; }
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                thead { display: table-header-group; }
+                tfoot { display: table-footer-group; }
+                tr { page-break-inside: avoid; break-inside: avoid; }
+                td, th { page-break-inside: avoid; break-inside: avoid; }
+                .print-no-break { page-break-inside: avoid; break-inside: avoid; }
+                .print-dados { page-break-inside: avoid; break-inside: avoid; }
+                h1, h2 { page-break-after: avoid; break-after: avoid; }
+                table { page-break-inside: auto; }
+            }
+        </style>
         <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; max-width: 100%;">
             
-            <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+            <div class="print-no-break" style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
                 <h1 style="margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Ficha Cadastral</h1>
-                <p style="margin: 2px 0 0; color: #555; font-size: 12px;">Connecta</p>
+                <p style="margin: 2px 0 0; color: #555; font-size: 12px;">Família Tudo a Ver</p>
             </div>
 
             <div style="${styleSection}">
@@ -673,106 +688,174 @@ async function verHistoricoCompleto(p) {
         }
 
         const cpfP = String(p.cpf || '').replace(/\D/g, '');
+        const nomeP = (p.nome || '').trim().toUpperCase();
+
+        // --- Atendimentos ---
         const history = todosAtendimentos.filter(a => {
             const aCpf = String(a.cpf_paciente || a.cpf || '').replace(/\D/g, '');
             return aCpf === cpfP && cpfP !== '';
         });
-        
+
+        // --- Currículos ---
+        let curricHistorico = [];
+        if (typeof todosCurriculos !== 'undefined' && Array.isArray(todosCurriculos)) {
+            curricHistorico = todosCurriculos.filter(c => {
+                const cCpf = String(c.cpf || '').replace(/\D/g, '');
+                const cNome = (c.nome || '').trim().toUpperCase();
+                return (cpfP && cCpf === cpfP) || (nomeP && cNome === nomeP);
+            });
+        } else if (typeof carregarCurriculos === 'function') {
+            try { await carregarCurriculos(); curricHistorico = (typeof todosCurriculos !== 'undefined' ? todosCurriculos : []).filter(c => { const cCpf = String(c.cpf || '').replace(/\D/g, ''); const cNome = (c.nome || '').trim().toUpperCase(); return (cpfP && cCpf === cpfP) || (nomeP && cNome === nomeP); }); } catch(e) {}
+        }
+
+        // --- Serviços Públicos ---
+        let servicosHistorico = [];
+        if (typeof todosServicos !== 'undefined' && Array.isArray(todosServicos)) {
+            servicosHistorico = todosServicos.filter(s => {
+                const sCpf = String(s.cpf || s.cpf_municipe || '').replace(/\D/g, '');
+                const sNome = (s.nome_municipe || s.nome || '').trim().toUpperCase();
+                return (cpfP && sCpf === cpfP) || (nomeP && sNome === nomeP);
+            });
+        } else if (typeof carregarServicosPublicos === 'function') {
+            try { await carregarServicosPublicos(); servicosHistorico = (typeof todosServicos !== 'undefined' ? todosServicos : []).filter(s => { const sCpf = String(s.cpf || s.cpf_municipe || '').replace(/\D/g, ''); const sNome = (s.nome_municipe || s.nome || '').trim().toUpperCase(); return (cpfP && sCpf === cpfP) || (nomeP && sNome === nomeP); }); } catch(e) {}
+        }
+
+        // --- Merge e ordenação por data ---
+        const toItems = (arr, tipo) => arr.map(item => ({ ...item, _tipoRegistro: tipo }));
+        const allItems = [
+            ...toItems(history, 'atendimento'),
+            ...toItems(curricHistorico, 'curriculo'),
+            ...toItems(servicosHistorico, 'servico'),
+        ];
+        allItems.sort((a, b) => {
+            const dA = a.data_criacao || a.data_abertura || a.data_entrada || a.data_solicitacao || '2000-01-01';
+            const dB = b.data_criacao || b.data_abertura || b.data_entrada || b.data_solicitacao || '2000-01-01';
+            return new Date(dB) - new Date(dA);
+        });
+
         history.sort((a,b) => new Date(b.data_criacao || b.data_abertura || '2000-01-01') - new Date(a.data_criacao || a.data_abertura || '2000-01-01'));
-        window.historicoAtualCache = history; 
+        window.historicoAtualCache = history;
 
-        if(history.length === 0) {
-            timeline.innerHTML = '<p class="text-slate-400 pl-4">Nenhum atendimento registrado.</p>';
+        if(allItems.length === 0) {
+            timeline.innerHTML = '<p class="text-slate-400 pl-4">Nenhum registro encontrado para este munícipe.</p>';
         } else {
-            const itemsHtml = history.map(at => {
-                const dataFmt = at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-';
-                let statusColor = "bg-slate-100 text-slate-600";
-                let borderColor = "border-slate-300";
-                
-                if(at.status === 'CONCLUIDO') { statusColor = "bg-emerald-100 text-emerald-700"; borderColor = "border-emerald-500"; }
-                if(at.status === 'PENDENTE') { statusColor = "bg-amber-100 text-amber-700"; borderColor = "border-amber-500"; }
-                if(at.status === 'CANCELADO') { statusColor = "bg-red-100 text-red-700"; borderColor = "border-red-500"; }
+            const itemsHtml = allItems.map(item => {
+                const tipo = item._tipoRegistro;
 
-                const tempId = 'hist_' + Math.random().toString(36).substr(2, 9);
-                window[tempId] = at;
-
-                return `
-                    <div class="relative pl-4 pb-6 cursor-pointer hover:opacity-90 transition group" onclick="abrirDetalheAtendimento(window['${tempId}'])">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-white rounded-full border-4 ${borderColor}"></div>
-                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm group-hover:shadow-md transition-all">
-                            
-                            <div class="flex justify-between items-start mb-3 border-b border-slate-50 pb-2">
-                                <div class="flex flex-col">
-                                    <span class="text-xs font-bold text-slate-400 uppercase">Data Abertura</span>
-                                    <span class="font-bold text-slate-800 text-lg">${dataFmt}</span>
+                // ---- ATENDIMENTO ----
+                if (tipo === 'atendimento') {
+                    const at = item;
+                    const dataFmt = at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-';
+                    let statusColor = "bg-slate-100 text-slate-600";
+                    let borderColor = "border-slate-300";
+                    if(at.status === 'CONCLUIDO') { statusColor = "bg-emerald-100 text-emerald-700"; borderColor = "border-emerald-500"; }
+                    if(at.status === 'PENDENTE') { statusColor = "bg-amber-100 text-amber-700"; borderColor = "border-amber-500"; }
+                    if(at.status === 'CANCELADO') { statusColor = "bg-red-100 text-red-700"; borderColor = "border-red-500"; }
+                    const tempId = 'hist_' + Math.random().toString(36).substr(2, 9);
+                    window[tempId] = at;
+                    return `
+                        <div class="relative pl-4 pb-6 cursor-pointer hover:opacity-90 transition group" onclick="abrirDetalheAtendimento(window['${tempId}'])">
+                            <div class="absolute -left-[9px] top-0 w-4 h-4 bg-white rounded-full border-4 ${borderColor}"></div>
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm group-hover:shadow-md transition-all">
+                                <div class="flex justify-between items-start mb-3 border-b border-slate-50 pb-2">
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold text-slate-400 uppercase">Atendimento — ${dataFmt}</span>
+                                        <span class="font-bold text-slate-800 text-lg">${at.tipo_servico || 'Atendimento'}</span>
+                                    </div>
+                                    <span class="${statusColor} text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide border border-black/5">${at.status}</span>
                                 </div>
-                                <span class="${statusColor} text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide border border-black/5">${at.status}</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-sm text-slate-700">
-                                <div class="col-span-2 sm:col-span-1">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Tipo / Serviço</span>
-                                    <span class="font-bold text-blue-900">${at.tipo_servico || 'N/I'}</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-sm text-slate-700">
+                                    <div class="col-span-2 sm:col-span-1">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase block">Especialidade / Proc.</span>
+                                        <span class="font-medium">${at.especialidade || at.procedimento || '-'}</span>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase block">Local / Detalhe</span>
+                                        <span>${at.local || '-'} ${at.tipo ? `(${at.tipo})` : ''}</span>
+                                    </div>
+                                    ${at.parceiro ? `<div class="col-span-2"><span class="text-[10px] font-bold text-slate-400 uppercase block">Parceiro</span><span class="text-emerald-700 font-medium"><i data-lucide="handshake" class="w-3 h-3 inline mr-1"></i>${at.parceiro}</span></div>` : ''}
+                                    ${at.data_marcacao ? `<div class="col-span-2 sm:col-span-1 bg-blue-50 p-2 rounded border border-blue-100 mt-2"><span class="text-[10px] font-bold text-blue-400 uppercase block">Agendado Para</span><span class="font-bold text-blue-800">${at.data_marcacao.split('-').reverse().join('/')}</span>${at.data_abertura ? `<span class="text-[10px] text-blue-400 block">${Math.ceil((new Date(at.data_marcacao) - new Date(at.data_abertura)) / (1000*60*60*24))} dias de espera</span>` : ''}</div>` : `<div class="col-span-2 sm:col-span-1 bg-slate-50 p-2 rounded border border-slate-200 mt-2"><span class="text-[10px] font-bold text-slate-400 uppercase block">Agendado Para</span><span class="text-slate-400 italic text-xs">Sem data de agendamento</span></div>`}
+                                    ${at.data_conclusao ? `<div class="col-span-2 sm:col-span-1 bg-emerald-50 p-2 rounded border border-emerald-100 mt-2"><span class="text-[10px] font-bold text-emerald-600 uppercase block">Conclusão / Prazo</span><span class="font-bold text-emerald-800">${at.data_conclusao.split('-').reverse().join('/')} <span class="text-xs ml-1 text-emerald-600">(${Math.ceil((new Date(at.data_conclusao) - new Date(at.data_abertura)) / (1000 * 60 * 60 * 24))} dias)</span></span></div>` : ''}
+                                    ${at.obs_atendimento ? `<div class="col-span-2 mt-2 pt-2 border-t border-slate-100"><span class="text-[10px] font-bold text-slate-400 uppercase block">Observações</span><p class="text-slate-500 italic text-xs line-clamp-2">${at.obs_atendimento}</p></div>` : ''}
+                                    ${at.anexos_link ? `<div class="col-span-2 mt-2 pt-2 border-t border-slate-100"><a href="${at.anexos_link}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold py-1.5 px-3 rounded-lg transition text-xs"><i data-lucide="paperclip" class="w-3 h-3"></i> Anexos do Atendimento</a></div>` : ''}
                                 </div>
-                                <div class="col-span-2 sm:col-span-1">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Especialidade / Proc.</span>
-                                    <span class="font-medium">${at.especialidade || at.procedimento || '-'}</span>
+                                <div class="text-xs text-slate-400 mt-3 flex justify-end items-center gap-1 group-hover:text-blue-500 transition-colors">
+                                    <span>Ver detalhes completos</span><i data-lucide="arrow-right" class="w-3 h-3"></i>
                                 </div>
-                                <div class="col-span-2">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Local / Detalhe</span>
-                                    <span>${at.local || '-'} ${at.tipo ? `(${at.tipo})` : ''}</span>
-                                </div>
-                                ${at.parceiro ? `
-                                <div class="col-span-2">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Parceiro</span>
-                                    <span class="text-emerald-700 font-medium"><i data-lucide="handshake" class="w-3 h-3 inline mr-1"></i>${at.parceiro}</span>
-                                </div>` : ''}
-                                ${at.data_marcacao ? `
-                                <div class="col-span-2 sm:col-span-1 bg-blue-50 p-2 rounded border border-blue-100 mt-2">
-                                    <span class="text-[10px] font-bold text-blue-400 uppercase block">Agendado Para</span>
-                                    <span class="font-bold text-blue-800">${at.data_marcacao.split('-').reverse().join('/')}</span>
-                                    ${at.data_abertura ? `<span class="text-[10px] text-blue-400 block">${Math.ceil((new Date(at.data_marcacao) - new Date(at.data_abertura)) / (1000*60*60*24))} dias de espera</span>` : ''}
-                                </div>` : `
-                                <div class="col-span-2 sm:col-span-1 bg-slate-50 p-2 rounded border border-slate-200 mt-2">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Agendado Para</span>
-                                    <span class="text-slate-400 italic text-xs">Sem data de agendamento</span>
-                                </div>`}
-                                ${at.data_conclusao ? `
-                                <div class="col-span-2 sm:col-span-1 bg-emerald-50 p-2 rounded border border-emerald-100 mt-2">
-                                    <span class="text-[10px] font-bold text-emerald-600 uppercase block">Conclusão / Prazo</span>
-                                    <span class="font-bold text-emerald-800">${at.data_conclusao.split('-').reverse().join('/')} <span class="text-xs ml-1 text-emerald-600">(${Math.ceil((new Date(at.data_conclusao) - new Date(at.data_abertura)) / (1000 * 60 * 60 * 24))} dias)</span></span>
-                                </div>` : ''}
-                                ${at.obs_atendimento ? `
-                                <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Observações</span>
-                                    <p class="text-slate-500 italic text-xs line-clamp-2">${at.obs_atendimento}</p>
-                                </div>` : ''}
-                                ${at.anexos_link ? `
-                                <div class="col-span-2 mt-2 pt-2 border-t border-slate-100">
-                                    <a href="${at.anexos_link}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold py-1.5 px-3 rounded-lg transition text-xs"><i data-lucide="paperclip" class="w-3 h-3"></i> Anexos do Atendimento</a>
-                                </div>` : ''}
-                            </div>
-                            <div class="text-xs text-slate-400 mt-3 flex justify-end items-center gap-1 group-hover:text-blue-500 transition-colors">
-                                <span>Ver detalhes completos</span>
-                                <i data-lucide="arrow-right" class="w-3 h-3"></i>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+
+                // ---- CURRÍCULO ----
+                if (tipo === 'curriculo') {
+                    const c = item;
+                    const dataFmt = (c.data_entrada || c.data_criacao || '').split('T')[0].split('-').reverse().join('/') || '-';
+                    return `
+                        <div class="relative pl-4 pb-6">
+                            <div class="absolute -left-[9px] top-0 w-4 h-4 bg-white rounded-full border-4 border-purple-400"></div>
+                            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200 shadow-sm">
+                                <div class="flex justify-between items-start mb-2 border-b border-purple-100 pb-2">
+                                    <div>
+                                        <span class="text-xs font-bold text-purple-400 uppercase">Currículo — ${dataFmt}</span>
+                                        <p class="font-bold text-purple-900">${c.cargo_proposto || 'Cargo não informado'}</p>
+                                    </div>
+                                    <span class="bg-purple-100 text-purple-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase">${c.status || '-'}</span>
+                                </div>
+                                <div class="text-sm text-slate-600 grid grid-cols-2 gap-2">
+                                    ${c.cnh ? `<div><span class="text-[10px] font-bold text-slate-400 uppercase block">CNH</span><span>${c.cnh}</span></div>` : ''}
+                                    ${c.indicacao ? `<div><span class="text-[10px] font-bold text-slate-400 uppercase block">Indicação</span><span>${c.indicacao}</span></div>` : ''}
+                                    ${c.observacoes ? `<div class="col-span-2"><span class="text-[10px] font-bold text-slate-400 uppercase block">Obs</span><p class="text-xs italic line-clamp-2">${c.observacoes}</p></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // ---- SERVIÇO PÚBLICO ----
+                if (tipo === 'servico') {
+                    const s = item;
+                    const dataFmt = (s.data_solicitacao || s.data_criacao || '').split('T')[0].split('-').reverse().join('/') || '-';
+                    let sColor = 'bg-indigo-100 text-indigo-700';
+                    if ((s.status || '').toUpperCase() === 'CONCLUIDO') sColor = 'bg-emerald-100 text-emerald-700';
+                    if ((s.status || '').toUpperCase() === 'PENDENTE') sColor = 'bg-amber-100 text-amber-700';
+                    return `
+                        <div class="relative pl-4 pb-6">
+                            <div class="absolute -left-[9px] top-0 w-4 h-4 bg-white rounded-full border-4 border-indigo-400"></div>
+                            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 shadow-sm">
+                                <div class="flex justify-between items-start mb-2 border-b border-indigo-100 pb-2">
+                                    <div>
+                                        <span class="text-xs font-bold text-indigo-400 uppercase">Serviço Público — ${dataFmt}</span>
+                                        <p class="font-bold text-indigo-900">${s.tipo_servico || s.servico || 'Serviço não informado'}</p>
+                                    </div>
+                                    <span class="${sColor} text-[10px] px-3 py-1 rounded-full font-bold uppercase">${s.status || '-'}</span>
+                                </div>
+                                <div class="text-sm text-slate-600 grid grid-cols-2 gap-2">
+                                    ${s.orgao ? `<div><span class="text-[10px] font-bold text-slate-400 uppercase block">Órgão</span><span>${s.orgao}</span></div>` : ''}
+                                    ${s.protocolo ? `<div><span class="text-[10px] font-bold text-slate-400 uppercase block">Protocolo</span><span>${s.protocolo}</span></div>` : ''}
+                                    ${s.observacoes || s.obs ? `<div class="col-span-2"><span class="text-[10px] font-bold text-slate-400 uppercase block">Obs</span><p class="text-xs italic line-clamp-2">${s.observacoes || s.obs}</p></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                return '';
             }).join('');
+
             timeline.innerHTML = `
                 <div class="mb-4 sticky top-0 bg-white dark:bg-slate-800 pt-1 pb-3 z-10 border-b border-slate-100 dark:border-slate-700">
                     <div class="relative">
                         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                        <input type="text" id="busca_historico" placeholder="Buscar por tipo, especialidade, local, status..." 
+                        <input type="text" id="busca_historico" placeholder="Buscar por tipo, especialidade, local, status..."
                             class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             oninput="filtrarHistoricoTimeline(this.value)">
                     </div>
                 </div>
                 <div id="hist-timeline-items">${itemsHtml}</div>`;
-            
+
             window._historicoItemsHtml = itemsHtml;
         }
+
         
         if(typeof lucide !== 'undefined') lucide.createIcons();
     } catch(e) {
