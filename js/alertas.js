@@ -110,13 +110,15 @@ function abrirDetalheAtendimentoCompleto(at) {
 }
 
 async function abrirModalContatoPendencia(at) {
-    if (!at.id_paciente) {
+    const pacienteId = at.paciente_id || at.id_paciente; // Fallback
+    
+    if (!pacienteId) {
         if(typeof showMessage === 'function') showMessage("Paciente não vinculado a este atendimento.", "error");
         return;
     }
     
     try {
-        const docSnap = await window.getDoc(window.doc(window.db, "pacientes", at.id_paciente));
+        const docSnap = await window.getDoc(window.doc(window.db, "pacientes", pacienteId));
         if (docSnap.exists()) {
             const data = docSnap.data();
             let num = data.telefone || data.whatsapp || '';
