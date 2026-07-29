@@ -181,9 +181,7 @@ async function abrirModalContatoPendencia(at) {
             document.getElementById('modal-contato-pendencia').classList.remove('hidden');
             setTimeout(() => document.getElementById('modal-contato-pendencia').classList.remove('opacity-0'), 10);
             
-        } else {
-            if(typeof showMessage === 'function') showMessage("Cadastro do paciente não encontrado.", "error");
-        }
+        // Fim do bloco normal sem o else antigo
     } catch (e) {
         console.error("Erro ao buscar contato do munícipe", e);
     }
