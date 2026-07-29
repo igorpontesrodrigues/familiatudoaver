@@ -145,7 +145,7 @@ async function abrirModalContatoPendencia(at) {
             }
         }
 
-        let num = data.telefone || data.whatsapp || '';
+        let num = data.tel1 || data.whatsapp || data.telefone || data.tel || data.tel2 || '';
         if (!num) {
             if(typeof showMessage === 'function') showMessage("Paciente não possui telefone cadastrado.", "error");
             return;
