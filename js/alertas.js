@@ -146,42 +146,44 @@ async function abrirModalContatoPendencia(at) {
         }
 
         let num = data.tel1 || data.whatsapp || data.telefone || data.tel || data.tel2 || '';
-        if (!num) {
-            if(typeof showMessage === 'function') showMessage("Paciente não possui telefone cadastrado.", "error");
-            return;
-        }
         num = num.replace(/\D/g, '');
+        
+        window.pendenciaSelecionada = at;
+        window.pendenciaPacienteId = pacienteId;
+        window.pendenciaTelefone = num;
+
+        const nomeStr = data.nome || at.nome_paciente || 'Paciente';
+        const primeiroNome = nomeStr.split(' ')[0];
+        const procStr = at.procedimento || at.tipo_servico || 'procedimento/exame';
+
+        document.getElementById('lbl-contato-nome').innerText = nomeStr;
+        document.getElementById('lbl-contato-procedimento').innerText = procStr;
+        
+        const h = new Date().getHours();
+        let saudacao = "Boa noite";
+        if(h < 12) saudacao = "Bom dia";
+        else if (h < 18) saudacao = "Boa tarde";
+
+        const textoBase = `${saudacao} ${primeiroNome}!\n\nAinda não conseguimos o seu ${procStr}. Estamos acompanhando a solicitação e, assim que tivermos um retorno, entraremos em contato imediatamente. Agradecemos pela compreensão.\n\nGostaria de saber: você quer continuar aguardando ou já conseguiu o atendimento?`;
+        
+        document.getElementById('txt-contato-pendencia').value = textoBase;
+        
         if (num.length < 10) {
-            if(typeof showMessage === 'function') showMessage("Número de telefone inválido.", "error");
-            return;
+            document.getElementById('bloco-mensagem-pendencia').classList.add('hidden');
+            document.getElementById('bloco-telefone-faltante').classList.remove('hidden');
+            document.getElementById('inp-novo-telefone-pendencia').value = '';
+        } else {
+            document.getElementById('bloco-mensagem-pendencia').classList.remove('hidden');
+            document.getElementById('bloco-telefone-faltante').classList.add('hidden');
         }
 
-            window.pendenciaSelecionada = at;
-            window.pendenciaTelefone = num;
+        document.getElementById('bloco-status-pendencia').classList.add('hidden');
+        
+        const modal = document.getElementById('modal-contato-pendencia');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
             
-            const nomeStr = data.nome || at.nome_paciente || 'Paciente';
-            // Pega o primeiro nome para a saudação
-            const primeiroNome = nomeStr.split(' ')[0];
-            const procStr = at.procedimento || at.tipo_servico || 'procedimento/exame';
-
-            document.getElementById('lbl-contato-nome').innerText = nomeStr;
-            document.getElementById('lbl-contato-procedimento').innerText = procStr;
-            
-            // Saudação baseada na hora
-            const h = new Date().getHours();
-            let saudacao = "Boa noite";
-            if(h < 12) saudacao = "Bom dia";
-            else if (h < 18) saudacao = "Boa tarde";
-
-            const textoBase = `${saudacao} ${primeiroNome}!\n\nAinda não conseguimos o seu ${procStr}. Estamos acompanhando a solicitação e, assim que tivermos um retorno, entraremos em contato imediatamente. Agradecemos pela compreensão.\n\nGostaria de saber: você quer continuar aguardando ou já conseguiu o atendimento?`;
-            
-            document.getElementById('txt-contato-pendencia').value = textoBase;
-            document.getElementById('bloco-status-pendencia').classList.add('hidden');
-            
-            document.getElementById('modal-contato-pendencia').classList.remove('hidden');
-            setTimeout(() => document.getElementById('modal-contato-pendencia').classList.remove('opacity-0'), 10);
-            
-        // Fim do bloco normal sem o else antigo
     } catch (e) {
         console.error("Erro ao buscar contato do munícipe", e);
     }
@@ -237,5 +239,51 @@ async function marcarStatusPendencia(statusRetorno) {
     } catch (e) {
         console.error("Erro ao atualizar status do atendimento", e);
         if(typeof showMessage === 'function') showMessage("Erro ao atualizar o atendimento.", "error");
+    }
+}
+
+async function salvarNovoTelefonePendencia() {
+    let inputTel = document.getElementById('inp-novo-telefone-pendencia').value;
+    let num = inputTel.replace(/\D/g, '');
+    
+    if (num.length < 10) {
+        if(typeof showMessage === 'function') showMessage("Digite um número de telefone válido com DDD.", "error");
+        return;
+    }
+    
+    const pacienteId = window.pendenciaPacienteId;
+    if (!pacienteId) return;
+
+    try {
+        const btnSalvar = document.querySelector('#bloco-telefone-faltante button');
+        const txtOriginal = btnSalvar.innerHTML;
+        btnSalvar.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin mx-auto"></i>`;
+        
+        // Atualiza no banco do Firebase
+        await window.updateDoc(window.doc(window.db, "pacientes", pacienteId), {
+            tel1: inputTel
+        });
+        
+        // Atualiza na memória se existir
+        if (typeof window.todosPacientes !== 'undefined') {
+            const p = window.todosPacientes.find(x => x.id === pacienteId);
+            if(p) p.tel1 = inputTel;
+        }
+
+        window.pendenciaTelefone = num;
+        btnSalvar.innerHTML = txtOriginal;
+        
+        // Troca os blocos
+        document.getElementById('bloco-telefone-faltante').classList.add('hidden');
+        document.getElementById('bloco-mensagem-pendencia').classList.remove('hidden');
+        
+        if(typeof showMessage === 'function') showMessage("Telefone salvo! Agora você pode enviar a mensagem.", "success");
+        
+        // Já envia o WhatsApp de uma vez, como o botão diz "Salvar e Enviar"
+        enviarWppPendencia();
+        
+    } catch (e) {
+        console.error("Erro ao salvar novo telefone:", e);
+        if(typeof showMessage === 'function') showMessage("Erro ao salvar telefone.", "error");
     }
 }
