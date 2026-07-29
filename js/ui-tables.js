@@ -1208,10 +1208,64 @@ async function gerarListagem() {
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento pendente.</td></tr>`;
         } else {
+            const categorias = {};
+            list.forEach(a => {
+                const cat = (a.tipo_servico || a.tipo || 'OUTROS').toUpperCase();
+                categorias[cat] = (categorias[cat] || 0) + 1;
+            });
+            
+            let cardsHtml = `
+            <tr>
+                <td colspan="4" class="bg-slate-50 p-6 border-b border-slate-200">
+                    <div class="flex flex-col gap-4">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Resumo de Pendências</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                                <span class="text-3xl font-black text-rose-500">${list.length}</span>
+                                <span class="text-xs font-bold text-slate-500 uppercase mt-1">Total Geral</span>
+                            </div>
+            `;
+            Object.keys(categorias).sort().forEach(cat => {
+                cardsHtml += `
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                                <span class="text-2xl font-black text-amber-500">${categorias[cat]}</span>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase mt-1 text-center leading-tight">${cat}</span>
+                            </div>
+                `;
+            });
+            cardsHtml += `
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            `;
+
+            html = cardsHtml;
+
             list.forEach(a => {
                 const dataFmt = a.data_risco ? a.data_risco.split('-').reverse().join('/') : '-';
                 const cat = (a.tipo_servico || a.tipo || '-').toUpperCase();
-                html += `<tr><td class="px-6 py-3 font-bold text-slate-700">${a.nome_paciente || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.cpf_paciente||''}</span></td><td class="px-6 py-3"><span class="inline-flex items-center px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">${cat}</span></td><td class="px-6 py-3">${a.procedimento||'-'}<br><span class="text-xs text-slate-500">${a.local||'-'}</span></td><td class="px-6 py-3 text-rose-500 font-bold text-sm">${dataFmt}</td></tr>`;
+                const tempId = 'pend_' + Math.random().toString(36).substr(2, 9);
+                window[tempId] = a;
+
+                html += `
+                <tr onclick="abrirDetalheAtendimento(window['${tempId}'])" class="cursor-pointer hover:bg-slate-50 transition border-b border-slate-100 last:border-0 group">
+                    <td class="px-6 py-3 font-bold text-slate-700 group-hover:text-blue-600 transition">
+                        ${a.nome_paciente || 'Desconhecido'} 
+                        <span class="text-xs text-slate-400 block font-normal group-hover:text-blue-400">${a.cpf_paciente||''}</span>
+                    </td>
+                    <td class="px-6 py-3">
+                        <span class="inline-flex items-center px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">${cat}</span>
+                    </td>
+                    <td class="px-6 py-3">
+                        ${a.procedimento||'-'}<br>
+                        <span class="text-xs text-slate-500">${a.local||'-'}</span>
+                    </td>
+                    <td class="px-6 py-3 flex flex-col justify-center">
+                        <span class="text-rose-500 font-bold text-sm">${dataFmt}</span>
+                        <span class="text-[10px] text-blue-500 opacity-0 group-hover:opacity-100 transition flex items-center gap-1 mt-1"><i data-lucide="external-link" class="w-3 h-3"></i> Abrir</span>
+                    </td>
+                </tr>`;
             });
         }
     }
@@ -1239,12 +1293,49 @@ async function gerarListagem() {
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento concluído encontrado.</td></tr>`;
         } else {
+            let cardsHtml = `
+            <tr>
+                <td colspan="4" class="bg-slate-50 p-6 border-b border-slate-200">
+                    <div class="flex flex-col gap-4">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Resumo de Concluídos</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                                <span class="text-3xl font-black text-emerald-500">${list.length}</span>
+                                <span class="text-xs font-bold text-slate-500 uppercase mt-1">Total Filtrado</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            `;
+            html = cardsHtml;
+
             list.forEach(a => {
                 const dataRaw = a.data_resolucao || a.data_fechamento || a.data_conclusao || a.updated_at || a.data_abertura || '';
                 const dataFmt = dataRaw ? (dataRaw.includes('T') ? dataRaw.split('T')[0].split('-').reverse().join('/') : dataRaw.split('-').reverse().join('/')) : '-';
                 const valCampo = (a[field] || '-').toUpperCase();
                 const secundario = isProcedimento ? (a.especialidade || a.tipo_servico || '-') : (a.tipo_servico || a.tipo || '-');
-                html += `<tr><td class="px-6 py-3 font-bold text-slate-700">${a.nome_paciente || 'Desconhecido'} <span class="text-xs text-slate-400 block font-normal">${a.cpf_paciente || ''}</span></td><td class="px-6 py-3"><span class="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">${valCampo}</span></td><td class="px-6 py-3 text-slate-500 text-sm">${secundario}</td><td class="px-6 py-3 text-emerald-600 font-bold text-sm">${dataFmt}</td></tr>`;
+                
+                const tempId = 'conc_' + Math.random().toString(36).substr(2, 9);
+                window[tempId] = a;
+
+                html += `
+                <tr onclick="abrirDetalheAtendimento(window['${tempId}'])" class="cursor-pointer hover:bg-slate-50 transition border-b border-slate-100 last:border-0 group">
+                    <td class="px-6 py-3 font-bold text-slate-700 group-hover:text-blue-600 transition">
+                        ${a.nome_paciente || 'Desconhecido'} 
+                        <span class="text-xs text-slate-400 block font-normal group-hover:text-blue-400">${a.cpf_paciente || ''}</span>
+                    </td>
+                    <td class="px-6 py-3">
+                        <span class="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">${valCampo}</span>
+                    </td>
+                    <td class="px-6 py-3 text-slate-500 text-sm">
+                        ${secundario}
+                    </td>
+                    <td class="px-6 py-3 flex flex-col justify-center">
+                        <span class="text-emerald-600 font-bold text-sm">${dataFmt}</span>
+                        <span class="text-[10px] text-blue-500 opacity-0 group-hover:opacity-100 transition flex items-center gap-1 mt-1"><i data-lucide="external-link" class="w-3 h-3"></i> Abrir</span>
+                    </td>
+                </tr>`;
             });
         }
     }
