@@ -87,9 +87,19 @@ async function renderizarAlertas() {
                     ${at.tipo_servico || '-'} ${at.procedimento ? `<span class="block opacity-70">${at.procedimento}</span>` : ''}
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <button onclick='abrirModalContatoPendencia(${JSON.stringify(at)})' class="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 p-2 rounded-lg transition" title="Enviar WhatsApp">
-                        <i data-lucide="message-circle" class="w-5 h-5"></i>
-                    </button>
+                    <div class="flex items-center justify-end gap-1">
+                        <button id="btn-wpp-${at.id}" onclick='abrirModalContatoPendencia(${JSON.stringify(at)})' class="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 p-2 rounded-lg transition" title="Enviar WhatsApp">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                        </button>
+                        <div id="acoes-wpp-${at.id}" class="hidden flex items-center gap-1">
+                            <button onclick='marcarStatusPendenciaInRow("${at.id}", "CONCLUIDO")' class="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-lg transition shadow-sm" title="Já Conseguiu (Concluir)">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick='marcarStatusPendenciaInRow("${at.id}", "AGUARDANDO")' class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg transition shadow-sm" title="Ainda Aguardando">
+                                <i data-lucide="clock" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -176,8 +186,6 @@ async function abrirModalContatoPendencia(at) {
             document.getElementById('bloco-mensagem-pendencia').classList.remove('hidden');
             document.getElementById('bloco-telefone-faltante').classList.add('hidden');
         }
-
-        document.getElementById('bloco-status-pendencia').classList.add('hidden');
         
         const modal = document.getElementById('modal-contato-pendencia');
         modal.classList.remove('hidden');
@@ -204,35 +212,52 @@ function enviarWppPendencia() {
         const url = `https://wa.me/55${num}?text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
         
-        // Exibe o bloco para perguntar o status
-        document.getElementById('bloco-status-pendencia').classList.remove('hidden');
+        if (window.pendenciaSelecionada && window.pendenciaSelecionada.id) {
+            const rowActions = document.getElementById('acoes-wpp-' + window.pendenciaSelecionada.id);
+            if (rowActions) {
+                rowActions.classList.remove('hidden');
+            }
+            const btnWpp = document.getElementById('btn-wpp-' + window.pendenciaSelecionada.id);
+            if (btnWpp) {
+                btnWpp.classList.add('text-slate-400', 'bg-slate-50', 'dark:bg-slate-800');
+                btnWpp.classList.remove('text-emerald-600', 'hover:bg-emerald-50');
+            }
+        }
+        
+        fecharModalContatoPendencia();
     }
 }
 
-async function marcarStatusPendencia(statusRetorno) {
-    const at = window.pendenciaSelecionada;
-    if(!at || !at.id) return;
+async function marcarStatusPendenciaInRow(atId, statusRetorno) {
+    if(!atId) return;
     
     try {
-        const docRef = window.doc(window.db, "atendimentos", at.id);
+        const docRef = window.doc(window.db, "atendimentos", atId);
+        const docSnap = await window.getDoc(docRef);
+        if(!docSnap.exists()) return;
+        
+        const atData = docSnap.data();
         const agoraStr = new Date().toLocaleString('pt-BR');
         
         if (statusRetorno === 'CONCLUIDO') {
             await window.updateDoc(docRef, {
                 status: 'CONCLUIDO',
                 data_conclusao: new Date().toISOString().split('T')[0],
-                obs_atendimento: (at.obs_atendimento ? at.obs_atendimento + '\n' : '') + `[${agoraStr}] - Marcado como Concluído via contato. O paciente informou que já conseguiu o atendimento.`
+                obs_atendimento: (atData.obs_atendimento ? atData.obs_atendimento + '\n' : '') + `[${agoraStr}] - Marcado como Concluído via alerta. O paciente informou que já conseguiu o atendimento.`
             });
             if(typeof showMessage === 'function') showMessage("Atendimento marcado como concluído!", "success");
         } else {
             // Apenas atualiza a observação
             await window.updateDoc(docRef, {
-                obs_atendimento: (at.obs_atendimento ? at.obs_atendimento + '\n' : '') + `[${agoraStr}] - Paciente contatado via WhatsApp e deseja continuar aguardando.`
+                obs_atendimento: (atData.obs_atendimento ? atData.obs_atendimento + '\n' : '') + `[${agoraStr}] - Paciente contatado via WhatsApp pelo alerta e deseja continuar aguardando.`
             });
             if(typeof showMessage === 'function') showMessage("Observação adicionada ao atendimento.", "success");
         }
         
-        fecharModalContatoPendencia();
+        // Esconde as ações da linha novamente
+        const rowActions = document.getElementById('acoes-wpp-' + atId);
+        if (rowActions) rowActions.classList.add('hidden');
+        
         // Recarrega as pendências para atualizar a lista
         renderizarAlertas();
         
