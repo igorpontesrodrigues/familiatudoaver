@@ -90,7 +90,10 @@ function adicionarProcedimentoNaLista() {
     // Reseta TODOS os selects customizados do card de atendimento
     ['especialidade', 'procedimento', 'local', 'tipo', 'tipo_servico', 'parceiro', 'prioridade', 'status_atendimento'].forEach(k => {
         const sel = document.getElementById(`sel_${k}`);
-        if(sel) sel.value = "";
+        if(sel) {
+            sel.value = "";
+            if (sel.tomselect) sel.tomselect.setValue('', true);
+        }
         const field = document.getElementById(`field_${k}`);
         if(field) field.value = "";
     });
@@ -480,7 +483,10 @@ function resetFormPaciente() {
     
     CONFIG_SELECTS.forEach(cfg => {
         const sel = document.getElementById(`sel_${cfg.id}`);
-        if(sel && cfg.id !== 'status_atendimento') sel.value = "";
+        if(sel && cfg.id !== 'status_atendimento') {
+            sel.value = "";
+            if (sel.tomselect) sel.tomselect.setValue('', true);
+        }
     });
 }
 
@@ -524,7 +530,10 @@ function resetFormAtendimento(preserveSearch = false) {
         if(typeof CONFIG_SELECTS !== 'undefined') {
             CONFIG_SELECTS.forEach(cfg => {
                 const sel = document.getElementById(`sel_${cfg.id}`);
-                if(sel) sel.value = "";
+                if(sel) {
+                    sel.value = "";
+                    if (sel.tomselect) sel.tomselect.setValue('', true);
+                }
             });
         }
     }
