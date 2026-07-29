@@ -284,43 +284,37 @@ function imprimirFicha() {
     // Gera o HTML do Histórico se houver dados em cache
     let historyHtml = '';
     if (window.historicoAtualCache && window.historicoAtualCache.length > 0) {
-        let totalGeral = 0;
+        const atendimentos = window.historicoAtualCache.filter(h => !h._tipoRegistro || h._tipoRegistro === 'atendimento');
+        const servicos = window.historicoAtualCache.filter(h => h._tipoRegistro === 'servico');
+        const curriculos = window.historicoAtualCache.filter(h => h._tipoRegistro === 'curriculo');
 
-        historyHtml += `
-            <div style="${styleSection}">
-                <h2 style="${styleTitle}">HISTÓRICO DE ATENDIMENTOS</h2>
-                <table style="${styleTable}">
-                    <thead>
-                        <tr>
-                             <th style="${styleTh} width: 60px;">Abertura</th>
-                             <th style="${styleTh} width: 75px;">Agendamento</th>
-                             <th style="${styleTh} width: 70px;">Status</th>
-                             <th style="${styleTh}">Classificação</th>
-                             <th style="${styleTh}">Procedimento / Especialidade</th>
-                             <th style="${styleTh}">Local / Prontuário</th>
-                             <th style="${styleTh} text-align: right; width: 70px;">Valor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        window.historicoAtualCache.forEach(h => {
-            const tipo = h._tipoRegistro || 'atendimento';
+        if (atendimentos.length > 0) {
+            let totalGeral = 0;
+            historyHtml += `
+                <div style="${styleSection}">
+                    <h2 style="${styleTitle}">HISTÓRICO DE ATENDIMENTOS</h2>
+                    <table style="${styleTable}">
+                        <thead>
+                            <tr>
+                                 <th style="${styleTh} width: 60px;">Abertura</th>
+                                 <th style="${styleTh} width: 75px;">Agendamento</th>
+                                 <th style="${styleTh} width: 70px;">Status</th>
+                                 <th style="${styleTh}">Classificação</th>
+                                 <th style="${styleTh}">Procedimento / Especialidade</th>
+                                 <th style="${styleTh}">Local / Prontuário</th>
+                                 <th style="${styleTh} text-align: right; width: 70px;">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
-            let dataAberturaFmt = '-';
-            let catTipo = '';
-            let espProc = '';
-            let localPront = '';
-            let agendamentoFmt = '-';
-            let diasEspera = '';
-            let valorFloat = 0;
-            let obsText = '';
-
-            if (tipo === 'atendimento') {
-                dataAberturaFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
-                catTipo = `${h.tipo_servico || ''}<br><span style="color:#666; font-size:8px">${h.tipo || ''}</span>`;
-                espProc = `<b>${h.especialidade || ''}</b><br>${h.procedimento || ''}`;
-                localPront = `<b>${h.local || '-'}</b>${h.prontuario ? `<br>Pront: ${h.prontuario}` : ''}`;
+            atendimentos.forEach(h => {
+                const dataAberturaFmt = h.data_abertura ? h.data_abertura.split('-').reverse().join('/') : '-';
+                const catTipo = `${h.tipo_servico || ''}<br><span style="color:#666; font-size:8px">${h.tipo || ''}</span>`;
+                const espProc = `<b>${h.especialidade || ''}</b><br>${h.procedimento || ''}`;
+                const localPront = `<b>${h.local || '-'}</b>${h.prontuario ? `<br>Pront: ${h.prontuario}` : ''}`;
+                let agendamentoFmt = '-';
+                let diasEspera = '';
                 if (h.data_marcacao) {
                     agendamentoFmt = h.data_marcacao.split('-').reverse().join('/');
                     if (h.data_abertura) {
@@ -328,52 +322,112 @@ function imprimirFicha() {
                         if (diff >= 0) diasEspera = `<br><span style="color:#888; font-size:8px">(${diff} dias de espera)</span>`;
                     }
                 }
-                valorFloat = parseFloat(h.valor) || 0;
+                const valorFloat = parseFloat(h.valor) || 0;
                 totalGeral += valorFloat;
-                obsText = h.obs_atendimento || '';
-            } else if (tipo === 'curriculo') {
-                const dataRaw = (h.data_entrada || h.data_criacao || '').split('T')[0];
-                dataAberturaFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
-                catTipo = `CURRÍCULO`;
-                espProc = `<b>${h.cargo_proposto || '-'}</b>`;
-                localPront = `CNH: ${h.cnh || '-'}<br>Indicação: ${h.indicacao || '-'}`;
-                obsText = h.observacoes || '';
-            } else if (tipo === 'servico') {
-                const dataRaw = (h.data_solicitacao || h.data_criacao || '').split('T')[0];
-                dataAberturaFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
-                catTipo = `SERVIÇO PÚBLICO`;
-                espProc = `<b>${h.tipo_servico || h.servico || '-'}</b>`;
-                localPront = `Órgão: ${h.orgao || '-'}<br>Prot: ${h.protocolo || '-'}`;
-                obsText = h.observacoes || h.obs || '';
-            }
+                const obsText = h.obs_atendimento || '';
+
+                historyHtml += `
+                    <tr style="${styleTr}">
+                        <td style="${styleTd}">${dataAberturaFmt}</td>
+                        <td style="${styleTd}">${agendamentoFmt}${diasEspera}</td>
+                        <td style="${styleTd}"><b>${h.status || '-'}</b></td>
+                        <td style="${styleTd}">${catTipo}</td>
+                        <td style="${styleTd}">${espProc}</td>
+                        <td style="${styleTd}">${localPront}</td>
+                        <td style="${styleTdRight}">${money(valorFloat)}</td>
+                    </tr>
+                    ${obsText ? `<tr style="${styleTr}"><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${obsText}</td></tr>` : ''}
+                `;
+            });
 
             historyHtml += `
-                <tr style="${styleTr}">
-                    <td style="${styleTd}">${dataAberturaFmt}</td>
-                    <td style="${styleTd}">${agendamentoFmt}${diasEspera}</td>
-                    <td style="${styleTd}"><b>${h.status || '-'}</b></td>
-                    <td style="${styleTd}">${catTipo}</td>
-                    <td style="${styleTd}">${espProc}</td>
-                    <td style="${styleTd}">${localPront}</td>
-                    <td style="${styleTdRight}">${tipo === 'atendimento' ? money(valorFloat) : '-'}</td>
-                </tr>
-                ${obsText ? `<tr style="${styleTr}"><td colspan="7" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${obsText}</td></tr>` : ''}
-            `;
-        });
-
-        // Linha de Total
-        historyHtml += `
-                <tr style="background-color: #f8fafc; font-weight: bold;">
-                    <td colspan="6" style="padding: 8px; text-align: right; border-top: 2px solid #333;">TOTAL GERAL:</td>
-                    <td style="padding: 8px; text-align: right; border-top: 2px solid #333; color: #2563eb;">${money(totalGeral)}</td>
-                </tr>
-        `;
-
-        historyHtml += `
+                    <tr style="background-color: #f8fafc; font-weight: bold;">
+                        <td colspan="6" style="padding: 8px; text-align: right; border-top: 2px solid #333;">TOTAL GERAL:</td>
+                        <td style="padding: 8px; text-align: right; border-top: 2px solid #333; color: #2563eb;">${money(totalGeral)}</td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
-        `;
+            `;
+        }
+
+        if (servicos.length > 0) {
+            historyHtml += `
+                <div style="${styleSection}">
+                    <h2 style="${styleTitle}">SERVIÇOS PÚBLICOS</h2>
+                    <table style="${styleTable}">
+                        <thead>
+                            <tr>
+                                 <th style="${styleTh} width: 60px;">Data Solic.</th>
+                                 <th style="${styleTh} width: 70px;">Status</th>
+                                 <th style="${styleTh}">Serviço / Tipo</th>
+                                 <th style="${styleTh}">Órgão</th>
+                                 <th style="${styleTh}">Protocolo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            servicos.forEach(h => {
+                const dataRaw = (h.data_solicitacao || h.data_criacao || '').split('T')[0];
+                const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
+                const obsText = h.observacoes || h.obs || '';
+
+                historyHtml += `
+                    <tr style="${styleTr}">
+                        <td style="${styleTd}">${dataFmt}</td>
+                        <td style="${styleTd}"><b>${h.status || '-'}</b></td>
+                        <td style="${styleTd}"><b>${h.tipo_servico || h.servico || '-'}</b></td>
+                        <td style="${styleTd}">${h.orgao || '-'}</td>
+                        <td style="${styleTd}">${h.protocolo || '-'}</td>
+                    </tr>
+                    ${obsText ? `<tr style="${styleTr}"><td colspan="5" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${obsText}</td></tr>` : ''}
+                `;
+            });
+            historyHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        if (curriculos.length > 0) {
+            historyHtml += `
+                <div style="${styleSection}">
+                    <h2 style="${styleTitle}">BANCO DE CURRÍCULOS</h2>
+                    <table style="${styleTable}">
+                        <thead>
+                            <tr>
+                                 <th style="${styleTh} width: 60px;">Data Entrada</th>
+                                 <th style="${styleTh} width: 70px;">Status</th>
+                                 <th style="${styleTh}">Cargo Proposto</th>
+                                 <th style="${styleTh}">CNH</th>
+                                 <th style="${styleTh}">Indicação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            curriculos.forEach(h => {
+                const dataRaw = (h.data_entrada || h.data_criacao || '').split('T')[0];
+                const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : '-';
+                const obsText = h.observacoes || '';
+
+                historyHtml += `
+                    <tr style="${styleTr}">
+                        <td style="${styleTd}">${dataFmt}</td>
+                        <td style="${styleTd}"><b>${h.status || '-'}</b></td>
+                        <td style="${styleTd}"><b>${h.cargo_proposto || '-'}</b></td>
+                        <td style="${styleTd}">${h.cnh || '-'}</td>
+                        <td style="${styleTd}">${h.indicacao || '-'}</td>
+                    </tr>
+                    ${obsText ? `<tr style="${styleTr}"><td colspan="5" style="border-bottom: 1px solid #eee; padding: 2px 4px 4px 4px; color: #555; font-style: italic; font-size: 9px; background-color: #fcfcfc; page-break-inside: avoid; break-inside: avoid;">Obs: ${obsText}</td></tr>` : ''}
+                `;
+            });
+            historyHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
     }
 
     const html = `
