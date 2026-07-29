@@ -1023,13 +1023,16 @@ async function mudarFiltroListagem() {
     if (tipo === 'aniversariantes') {
         lblFiltro.innerText = "Selecione o Mês";
         selMes.classList.remove('hidden');
-    } else if (tipo === 'pendentes' || tipo === 'servicos' || tipo === 'curriculos') {
+    } else if (tipo === 'servicos' || tipo === 'curriculos') {
         lblFiltro.innerText = "Filtro Automático";
         containerTxt.classList.remove('hidden');
         txtBusca.disabled = true;
-        txtBusca.placeholder = tipo === 'pendentes' ? "Todos os pendentes..." : "Todos os registros...";
-    } else if (tipo === 'concluidos_procedimento' || tipo === 'concluidos_especialidade') {
-        const campo = tipo === 'concluidos_procedimento' ? 'Procedimento / Exame' : 'Especialidade';
+        txtBusca.placeholder = "Todos os registros...";
+    } else if (tipo === 'pendentes' || tipo === 'concluidos_procedimento' || tipo === 'concluidos_especialidade') {
+        const isPendente = tipo === 'pendentes';
+        const isProc = tipo === 'concluidos_procedimento';
+        const campo = isPendente ? 'Categoria' : (isProc ? 'Procedimento / Exame' : 'Especialidade');
+        
         lblFiltro.innerText = `Filtrar por ${campo}`;
         if (selSelect) {
             selSelect.classList.remove('hidden');
@@ -1039,14 +1042,23 @@ async function mudarFiltroListagem() {
                 if (typeof carregarListaAtendimentos === 'function') await carregarListaAtendimentos();
             }
 
-            const field = tipo === 'concluidos_procedimento' ? 'procedimento' : 'especialidade';
-            const concluidos = (todosAtendimentos || []).filter(a => {
-                const s = (a.status || '').toUpperCase();
-                return s === 'RESOLVIDO' || s === 'CONCLUIDO' || s === 'CONCLUÍDO' || s === 'RESOLVIDO' || s === 'FINALIZADO';
-            });
+            let field = 'tipo_servico';
+            if (!isPendente) field = isProc ? 'procedimento' : 'especialidade';
+
+            let baseList = (todosAtendimentos || []);
+            if (isPendente) {
+                baseList = baseList.filter(a => a.status === 'PENDENTE');
+            } else {
+                baseList = baseList.filter(a => {
+                    const s = (a.status || '').toUpperCase();
+                    return s === 'RESOLVIDO' || s === 'CONCLUIDO' || s === 'CONCLUÍDO' || s === 'FINALIZADO';
+                });
+            }
+
             const unique = new Set();
-            concluidos.forEach(a => {
-                const v = (a[field] || '').trim().toUpperCase();
+            baseList.forEach(a => {
+                let v = (a[field] || '').trim().toUpperCase();
+                if (isPendente && !v) v = (a.tipo || '').trim().toUpperCase();
                 if (v && v !== '-') unique.add(v);
             });
             Array.from(unique).sort().forEach(v => {
@@ -1201,7 +1213,15 @@ async function gerarListagem() {
     } 
     else if (tipo === 'pendentes') {
         header = `<tr><th class="px-6 py-4">Munícipe (CPF)</th><th class="px-6 py-4">Categoria</th><th class="px-6 py-4">Procedimento / Local</th><th class="px-6 py-4">Data Risco</th></tr>`;
-        const list = todosAtendimentos.filter(a => a.status === 'PENDENTE');
+        let list = todosAtendimentos.filter(a => a.status === 'PENDENTE');
+
+        const filtroSel = (document.getElementById('inp-filtro-secundario-select')?.value || '').trim().toUpperCase();
+        if (filtroSel) {
+            list = list.filter(a => {
+                const cat = (a.tipo_servico || a.tipo || '').trim().toUpperCase();
+                return cat === filtroSel;
+            });
+        }
 
         list.sort((a,b) => (a.nome_paciente || '').localeCompare(b.nome_paciente || ''));
 
@@ -1293,16 +1313,32 @@ async function gerarListagem() {
         if (list.length === 0) {
             html = `<tr><td colspan="4" class="px-6 py-4 text-center">Nenhum atendimento concluído encontrado.</td></tr>`;
         } else {
+            const counts = {};
+            list.forEach(a => {
+                const v = (a[field] || 'NÃO INFORMADO').toUpperCase();
+                counts[v] = (counts[v] || 0) + 1;
+            });
+
             let cardsHtml = `
             <tr>
                 <td colspan="4" class="bg-slate-50 p-6 border-b border-slate-200">
                     <div class="flex flex-col gap-4">
                         <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Resumo de Concluídos</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
                                 <span class="text-3xl font-black text-emerald-500">${list.length}</span>
                                 <span class="text-xs font-bold text-slate-500 uppercase mt-1">Total Filtrado</span>
                             </div>
+            `;
+            Object.keys(counts).sort().forEach(k => {
+                cardsHtml += `
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
+                                <span class="text-2xl font-black text-emerald-500">${counts[k]}</span>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase mt-1 text-center leading-tight">${k}</span>
+                            </div>
+                `;
+            });
+            cardsHtml += `
                         </div>
                     </div>
                 </td>
