@@ -110,27 +110,51 @@ function abrirDetalheAtendimentoCompleto(at) {
 }
 
 async function abrirModalContatoPendencia(at) {
-    const pacienteId = at.paciente_id || at.id_paciente; // Fallback
-    
-    if (!pacienteId) {
-        if(typeof showMessage === 'function') showMessage("Paciente não vinculado a este atendimento.", "error");
+    let pacienteId = at.paciente_id || at.id_paciente;
+    let data = null;
+
+    // Se não tiver ID direto, tenta achar o paciente na lista carregada em memória
+    if (!pacienteId && typeof window.todosPacientes !== 'undefined') {
+        let pEncontrado = null;
+        if (at.cpf_paciente) {
+            const cpfLimpo = String(at.cpf_paciente).replace(/\D/g, '');
+            pEncontrado = window.todosPacientes.find(p => p.cpf && String(p.cpf).replace(/\D/g, '') === cpfLimpo);
+        }
+        if (!pEncontrado && at.nome_paciente) {
+            pEncontrado = window.todosPacientes.find(p => p.nome === at.nome_paciente);
+        }
+        if (pEncontrado) {
+            pacienteId = pEncontrado.id;
+            data = pEncontrado;
+        }
+    }
+
+    if (!pacienteId && !data) {
+        if(typeof showMessage === 'function') showMessage("Paciente não vinculado a este atendimento (sem CPF ou Nome exato).", "error");
         return;
     }
     
     try {
-        const docSnap = await window.getDoc(window.doc(window.db, "pacientes", pacienteId));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            let num = data.telefone || data.whatsapp || '';
-            if (!num) {
-                if(typeof showMessage === 'function') showMessage("Paciente não possui telefone cadastrado.", "error");
+        if (!data) {
+            const docSnap = await window.getDoc(window.doc(window.db, "pacientes", pacienteId));
+            if (docSnap.exists()) {
+                data = docSnap.data();
+            } else {
+                if(typeof showMessage === 'function') showMessage("Cadastro do paciente não encontrado no banco.", "error");
                 return;
             }
-            num = num.replace(/\D/g, '');
-            if (num.length < 10) {
-                if(typeof showMessage === 'function') showMessage("Número de telefone inválido.", "error");
-                return;
-            }
+        }
+
+        let num = data.telefone || data.whatsapp || '';
+        if (!num) {
+            if(typeof showMessage === 'function') showMessage("Paciente não possui telefone cadastrado.", "error");
+            return;
+        }
+        num = num.replace(/\D/g, '');
+        if (num.length < 10) {
+            if(typeof showMessage === 'function') showMessage("Número de telefone inválido.", "error");
+            return;
+        }
 
             window.pendenciaSelecionada = at;
             window.pendenciaTelefone = num;
