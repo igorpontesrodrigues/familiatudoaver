@@ -701,7 +701,7 @@
 
             <!-- Tabela Alertas -->
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex-1 flex flex-col overflow-hidden min-h-[400px]">
-                <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-3 z-20 relative">
                     <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm"><i data-lucide="list" class="w-4 h-4 inline mr-1"></i> Lista de Pendências</h3>
                     <select id="filtro-alertas-idade" onchange="renderizarAlertas()" class="input-field text-sm max-w-xs">
                         <option value="todos">Mostrar Todas as Pendências</option>
@@ -2255,6 +2255,36 @@
                         <div class="text-xs text-slate-500 mt-1">Apenas Nome. CPF não exigido.</div>
                     </div>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONTATO PENDÊNCIA -->
+    <div id="modal-contato-pendencia" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+        <div id="modal-contato-pendencia-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
+                <h3 class="font-bold text-emerald-900 flex items-center gap-2"><i data-lucide="message-circle" class="w-5 h-5 text-emerald-600"></i> Contatar Munícipe</h3>
+                <button onclick="fecharModalContatoPendencia()" class="text-emerald-400 hover:text-emerald-600 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-slate-600 mb-2">Enviar mensagem WhatsApp sobre <strong id="lbl-contato-procedimento"></strong> para <strong id="lbl-contato-nome"></strong>?</p>
+                <textarea id="txt-contato-pendencia" rows="6" class="w-full text-sm p-3 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"></textarea>
+                
+                <button id="btn-enviar-wpp-pendencia" onclick="enviarWppPendencia()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition flex justify-center items-center gap-2">
+                    <i data-lucide="send" class="w-5 h-5"></i> Enviar WhatsApp
+                </button>
+
+                <div id="bloco-status-pendencia" class="hidden mt-4 pt-4 border-t border-slate-200">
+                    <p class="text-sm font-bold text-slate-800 mb-3 text-center">Qual foi o retorno do munícipe?</p>
+                    <div class="flex gap-2">
+                        <button onclick="marcarStatusPendencia('CONCLUIDO')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs shadow-sm transition">
+                            Já Conseguiu (Concluir)
+                        </button>
+                        <button onclick="marcarStatusPendencia('AGUARDANDO')" class="flex-1 bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 rounded-lg text-xs shadow-sm transition">
+                            Ainda Aguardando
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

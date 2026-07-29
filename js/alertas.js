@@ -87,7 +87,7 @@ async function renderizarAlertas() {
                     ${at.tipo_servico || '-'} ${at.procedimento ? `<span class="block opacity-70">${at.procedimento}</span>` : ''}
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <button onclick="contatarMunicipe('${at.id_paciente}')" class="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 p-2 rounded-lg transition" title="Enviar WhatsApp">
+                    <button onclick='abrirModalContatoPendencia(${JSON.stringify(at)})' class="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 p-2 rounded-lg transition" title="Enviar WhatsApp">
                         <i data-lucide="message-circle" class="w-5 h-5"></i>
                     </button>
                 </td>
@@ -109,13 +109,14 @@ function abrirDetalheAtendimentoCompleto(at) {
     }
 }
 
-async function contatarMunicipe(idPaciente) {
-    if (!idPaciente) {
+async function abrirModalContatoPendencia(at) {
+    if (!at.id_paciente) {
         if(typeof showMessage === 'function') showMessage("Paciente não vinculado a este atendimento.", "error");
         return;
     }
+    
     try {
-        const docSnap = await window.getDoc(window.doc(window.db, "pacientes", idPaciente));
+        const docSnap = await window.getDoc(window.doc(window.db, "pacientes", at.id_paciente));
         if (docSnap.exists()) {
             const data = docSnap.data();
             let num = data.telefone || data.whatsapp || '';
@@ -124,16 +125,36 @@ async function contatarMunicipe(idPaciente) {
                 return;
             }
             num = num.replace(/\D/g, '');
-            if (num.length >= 10) {
-                // Abrir modal do zap se existir
-                if (typeof abrirModalZapPersonalizado === 'function') {
-                    abrirModalZapPersonalizado(data.nome, num);
-                } else {
-                    window.open(`https://wa.me/55${num}`, '_blank');
-                }
-            } else {
+            if (num.length < 10) {
                 if(typeof showMessage === 'function') showMessage("Número de telefone inválido.", "error");
+                return;
             }
+
+            window.pendenciaSelecionada = at;
+            window.pendenciaTelefone = num;
+            
+            const nomeStr = data.nome || at.nome_paciente || 'Paciente';
+            // Pega o primeiro nome para a saudação
+            const primeiroNome = nomeStr.split(' ')[0];
+            const procStr = at.procedimento || at.tipo_servico || 'procedimento/exame';
+
+            document.getElementById('lbl-contato-nome').innerText = nomeStr;
+            document.getElementById('lbl-contato-procedimento').innerText = procStr;
+            
+            // Saudação baseada na hora
+            const h = new Date().getHours();
+            let saudacao = "Boa noite";
+            if(h < 12) saudacao = "Bom dia";
+            else if (h < 18) saudacao = "Boa tarde";
+
+            const textoBase = `${saudacao} ${primeiroNome}!\n\nAinda não conseguimos o seu ${procStr}. Estamos acompanhando a solicitação e, assim que tivermos um retorno, entraremos em contato imediatamente. Agradecemos pela compreensão.\n\nGostaria de saber: você quer continuar aguardando ou já conseguiu o atendimento?`;
+            
+            document.getElementById('txt-contato-pendencia').value = textoBase;
+            document.getElementById('bloco-status-pendencia').classList.add('hidden');
+            
+            document.getElementById('modal-contato-pendencia').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-contato-pendencia').classList.remove('opacity-0'), 10);
+            
         } else {
             if(typeof showMessage === 'function') showMessage("Cadastro do paciente não encontrado.", "error");
         }
@@ -142,33 +163,55 @@ async function contatarMunicipe(idPaciente) {
     }
 }
 
-// Pequena função auxiliar para zap
-function abrirModalZapPersonalizado(nome, telefone) {
-    // Utiliza o modal existente (zap-v2 ou similar)
-    const textoBase = `Olá ${nome}, tudo bem? Aqui é da equipe Connecta. Gostaríamos de atualizar o status da sua solicitação pendente conosco...`;
-    
-    // Se o modal de zap confirmação existir (usado em agenda)
-    const modalConfirmacao = document.getElementById('modal-zap-confirmacao');
-    if (modalConfirmacao) {
-        document.getElementById('zap-data').value = "";
-        document.getElementById('zap-hora').value = "";
-        document.getElementById('zap-texto-final').value = textoBase;
+function fecharModalContatoPendencia() {
+    const modal = document.getElementById('modal-contato-pendencia');
+    if(modal) {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+}
+
+function enviarWppPendencia() {
+    const msg = document.getElementById('txt-contato-pendencia').value;
+    const num = window.pendenciaTelefone;
+    if(num && msg) {
+        const url = `https://wa.me/55${num}?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
         
-        // Sobrescrever a função do botão de enviar momentaneamente
-        const oldSendBtn = document.querySelector('#modal-zap-confirmacao button.bg-emerald-500');
-        if (oldSendBtn) {
-            const newBtn = oldSendBtn.cloneNode(true);
-            oldSendBtn.parentNode.replaceChild(newBtn, oldSendBtn);
-            newBtn.onclick = function() {
-                const finalMsg = document.getElementById('zap-texto-final').value;
-                const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(finalMsg)}`;
-                window.open(url, '_blank');
-                modalConfirmacao.classList.add('hidden');
-            };
+        // Exibe o bloco para perguntar o status
+        document.getElementById('bloco-status-pendencia').classList.remove('hidden');
+    }
+}
+
+async function marcarStatusPendencia(statusRetorno) {
+    const at = window.pendenciaSelecionada;
+    if(!at || !at.id) return;
+    
+    try {
+        const docRef = window.doc(window.db, "atendimentos", at.id);
+        const agoraStr = new Date().toLocaleString('pt-BR');
+        
+        if (statusRetorno === 'CONCLUIDO') {
+            await window.updateDoc(docRef, {
+                status: 'CONCLUIDO',
+                data_conclusao: new Date().toISOString().split('T')[0],
+                obs_atendimento: (at.obs_atendimento ? at.obs_atendimento + '\n' : '') + `[${agoraStr}] - Marcado como Concluído via contato. O paciente informou que já conseguiu o atendimento.`
+            });
+            if(typeof showMessage === 'function') showMessage("Atendimento marcado como concluído!", "success");
+        } else {
+            // Apenas atualiza a observação
+            await window.updateDoc(docRef, {
+                obs_atendimento: (at.obs_atendimento ? at.obs_atendimento + '\n' : '') + `[${agoraStr}] - Paciente contatado via WhatsApp e deseja continuar aguardando.`
+            });
+            if(typeof showMessage === 'function') showMessage("Observação adicionada ao atendimento.", "success");
         }
         
-        modalConfirmacao.classList.remove('hidden');
-    } else {
-        window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(textoBase)}`, '_blank');
+        fecharModalContatoPendencia();
+        // Recarrega as pendências para atualizar a lista
+        renderizarAlertas();
+        
+    } catch (e) {
+        console.error("Erro ao atualizar status do atendimento", e);
+        if(typeof showMessage === 'function') showMessage("Erro ao atualizar o atendimento.", "error");
     }
 }
