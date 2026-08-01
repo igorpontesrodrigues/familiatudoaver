@@ -962,3 +962,113 @@ window.atualizarOpcoesSelectAdmin = function() {
         sel.tomselect.sync();
     }
 };
+
+window.reconciliarIndicacoes = async function() {
+    const btn = document.getElementById('btn-reconciliar');
+    const res = document.getElementById('resultado-reconciliacao');
+    if(!btn || !res) return;
+    
+    if(!confirm('Isso vai analisar todos os pacientes e atendimentos para alinhar os campos de Indicação e Liderança. Deseja continuar?')) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processando...';
+    res.classList.remove('hidden');
+    res.innerHTML = 'Baixando banco de dados...<br>';
+    
+    try {
+        const pacSnap = await window.getDocs(window.collection(window.db, 'pacientes'));
+        const pacientes = {};
+        pacSnap.forEach(d => { pacientes[d.id] = { id: d.id, ...d.data() }; });
+        res.innerHTML += `> ${Object.keys(pacientes).length} pacientes carregados.<br>`;
+        
+        const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
+        const atendimentos = [];
+        atSnap.forEach(d => { atendimentos.push({ id: d.id, ...d.data() }); });
+        res.innerHTML += `> ${atendimentos.length} atendimentos carregados.<br>`;
+        
+        res.innerHTML += 'Analisando inconsistências...<br>';
+        
+        let correcoesPacientes = 0;
+        let correcoesAtendimentos = 0;
+        
+        const batchPacientes = [];
+        const batchAtendimentos = [];
+        
+        atendimentos.forEach(at => {
+            if(!at.cpf_paciente) return;
+            const p = Object.values(pacientes).find(pac => pac.cpf === at.cpf_paciente);
+            if(!p) return;
+            
+            const pInd = (p.indicacao || '').trim().toUpperCase();
+            const aInd = (at.indicacao || '').trim().toUpperCase();
+            
+            if(!pInd && aInd && aInd !== 'SEM INDICAÇÃO') {
+                p.indicacao = aInd;
+                if(!batchPacientes.find(x => x.id === p.id)) {
+                    batchPacientes.push({ id: p.id, indicacao: aInd });
+                }
+            } 
+            else if(pInd && pInd !== 'SEM INDICAÇÃO' && pInd !== aInd) {
+                if(!batchAtendimentos.find(x => x.id === at.id)) {
+                    batchAtendimentos.push({ id: at.id, indicacao: pInd });
+                }
+            }
+            
+            const pLider = (p.lideranca || '').trim().toUpperCase();
+            const aLider = (at.lideranca || '').trim().toUpperCase();
+            
+            if(!pLider && aLider === 'SIM') {
+                p.lideranca = 'SIM';
+                const existing = batchPacientes.find(x => x.id === p.id);
+                if(existing) existing.lideranca = 'SIM';
+                else batchPacientes.push({ id: p.id, lideranca: 'SIM' });
+            }
+            else if(pLider === 'SIM' && aLider !== 'SIM') {
+                const existing = batchAtendimentos.find(x => x.id === at.id);
+                if(existing) existing.lideranca = 'SIM';
+                else batchAtendimentos.push({ id: at.id, lideranca: 'SIM' });
+            }
+        });
+        
+        res.innerHTML += `> Encontradas ${batchPacientes.length} correções para Pacientes.<br>`;
+        res.innerHTML += `> Encontradas ${batchAtendimentos.length} correções para Atendimentos.<br>`;
+        
+        if(batchPacientes.length > 0 || batchAtendimentos.length > 0) {
+            res.innerHTML += 'Aplicando correções no banco... (não feche a página)<br>';
+            
+            for(let i=0; i<batchPacientes.length; i++) {
+                const updateData = {};
+                if(batchPacientes[i].indicacao) updateData.indicacao = batchPacientes[i].indicacao;
+                if(batchPacientes[i].lideranca) updateData.lideranca = batchPacientes[i].lideranca;
+                
+                await window.updateDoc(window.doc(window.db, 'pacientes', batchPacientes[i].id), updateData);
+                correcoesPacientes++;
+                if(i % 10 === 0) res.innerHTML += '.';
+            }
+            
+            for(let i=0; i<batchAtendimentos.length; i++) {
+                const updateData = {};
+                if(batchAtendimentos[i].indicacao) updateData.indicacao = batchAtendimentos[i].indicacao;
+                if(batchAtendimentos[i].lideranca) updateData.lideranca = batchAtendimentos[i].lideranca;
+                
+                await window.updateDoc(window.doc(window.db, 'atendimentos', batchAtendimentos[i].id), updateData);
+                correcoesAtendimentos++;
+                if(i % 10 === 0) res.innerHTML += '.';
+            }
+            
+            res.innerHTML += '<br><span class="text-emerald-600 font-bold">Correções aplicadas com sucesso!</span><br>';
+            if(typeof window.logAuditoria === 'function') {
+                window.logAuditoria('ALTERAÇÃO', 'Ferramentas do Sistema', `Reconciliação de Indicações: ${correcoesPacientes} pacientes e ${correcoesAtendimentos} atendimentos atualizados.`);
+            }
+        } else {
+            res.innerHTML += '<br><span class="text-emerald-600 font-bold">Nenhuma inconsistência encontrada!</span> O banco já está alinhado.<br>';
+        }
+        
+    } catch(e) {
+        res.innerHTML += `<br><span class="text-red-500 font-bold">ERRO: ${e.message}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="git-merge" class="w-4 h-4"></i> Reconciliar Novamente';
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+    }
+};

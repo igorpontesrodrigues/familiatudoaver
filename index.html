@@ -1185,6 +1185,13 @@
                 <p class="text-xs text-purple-600 mb-4 flex-1">Encontra atendimentos que não possuem um munícipe correspondente no banco (CPF deletado ou alterado) e permite excluí-los.</p>
                 <button onclick="if(window.auditarAtendimentosOrfaos) auditarAtendimentosOrfaos();" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition text-sm flex items-center justify-center gap-2 shadow-sm"><i data-lucide="unlink" class="w-4 h-4"></i> Procurar Órfãos</button>
             </div>
+            
+            <div class="p-5 border border-teal-100 bg-teal-50 rounded-xl h-full flex flex-col">
+                <h4 class="font-bold text-teal-800 text-sm mb-2">Reconciliar Indicações</h4>
+                <p class="text-xs text-teal-600 mb-4 flex-1">Corrige inconsistências entre o campo "Indicação" dos atendimentos e dos cadastros de munícipes (causa do "0 pessoas / X atendimentos" nas lideranças).</p>
+                <div id="resultado-reconciliacao" class="hidden text-xs mb-3 p-3 rounded-lg bg-white border border-teal-100 text-teal-800 font-mono max-h-32 overflow-y-auto"></div>
+                <button onclick="if(window.reconciliarIndicacoes) reconciliarIndicacoes();" id="btn-reconciliar" class="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition text-sm flex items-center justify-center gap-2 shadow-sm"><i data-lucide="git-merge" class="w-4 h-4"></i> Reconciliar Agora</button>
+            </div>
         </div>
     </div>
 </div>
