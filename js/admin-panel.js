@@ -981,11 +981,19 @@ window.reconciliarIndicacoes = async function() {
         const pacientesMapId = {};
         const pacientesMapCpf = {};
         const pacientesMapNome = {};
+        const isValidKey = (k) => {
+            if(!k) return false;
+            if(typeof k !== 'string') return false;
+            const t = k.trim().toUpperCase();
+            if(t === '' || t === 'UNDEFINED' || t === 'NULL' || t === '___.___.___-__') return false;
+            return true;
+        };
+
         pacSnap.forEach(d => { 
             const p = { id: d.id, ...d.data() };
             pacientesMapId[p.id] = p;
-            if(p.cpf) pacientesMapCpf[p.cpf] = p;
-            if(p.nome) pacientesMapNome[p.nome.toUpperCase()] = p;
+            if(isValidKey(p.cpf)) pacientesMapCpf[p.cpf] = p;
+            if(isValidKey(p.nome)) pacientesMapNome[p.nome.trim().toUpperCase()] = p;
         });
         
         const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
@@ -995,8 +1003,8 @@ window.reconciliarIndicacoes = async function() {
             
             let p = null;
             if(at.id_paciente && pacientesMapId[at.id_paciente]) p = pacientesMapId[at.id_paciente];
-            else if(at.cpf_paciente && pacientesMapCpf[at.cpf_paciente]) p = pacientesMapCpf[at.cpf_paciente];
-            else if(at.nome_paciente && pacientesMapNome[at.nome_paciente.toUpperCase()]) p = pacientesMapNome[at.nome_paciente.toUpperCase()];
+            else if(isValidKey(at.cpf_paciente) && pacientesMapCpf[at.cpf_paciente]) p = pacientesMapCpf[at.cpf_paciente];
+            else if(isValidKey(at.nome_paciente) && pacientesMapNome[at.nome_paciente.trim().toUpperCase()]) p = pacientesMapNome[at.nome_paciente.trim().toUpperCase()];
             
             if(!p) return; // orfão
             if(!atendimentosMap[p.id]) atendimentosMap[p.id] = [];

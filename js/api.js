@@ -1122,11 +1122,19 @@ async function initLiderancas() {
     const mapPacientes = {};
     const mapPacientesById = {};
     const mapPacientesByNome = {};
+    const isValidKey = (k) => {
+        if(!k) return false;
+        if(typeof k !== 'string') return false;
+        const t = k.trim().toUpperCase();
+        if(t === '' || t === 'UNDEFINED' || t === 'NULL' || t === '___.___.___-__') return false;
+        return true;
+    };
+
     if (dashboardRawData.pacientes) {
         dashboardRawData.pacientes.forEach(p => {
-            if (p.cpf) mapPacientes[p.cpf] = p;
+            if (isValidKey(p.cpf)) mapPacientes[p.cpf] = p;
             if (p.id) mapPacientesById[p.id] = p;
-            if (p.nome) mapPacientesByNome[p.nome.toUpperCase()] = p;
+            if (isValidKey(p.nome)) mapPacientesByNome[p.nome.trim().toUpperCase()] = p;
         });
     }
 
@@ -1144,8 +1152,8 @@ async function initLiderancas() {
         } else {
             let pParc = null;
             if (at.id_paciente && mapPacientesById[at.id_paciente]) pParc = mapPacientesById[at.id_paciente];
-            else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
-            else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.toUpperCase()];
+            else if (isValidKey(at.cpf_paciente) && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
+            else if (isValidKey(at.nome_paciente) && mapPacientesByNome[at.nome_paciente.trim().toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.trim().toUpperCase()];
             
             if(pParc && pParc.parceiro) parc = pParc.parceiro.trim().toUpperCase();
         }
@@ -1197,8 +1205,8 @@ async function initLiderancas() {
         } else {
             let pParc = null;
             if (at.id_paciente && mapPacientesById[at.id_paciente]) pParc = mapPacientesById[at.id_paciente];
-            else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
-            else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.toUpperCase()];
+            else if (isValidKey(at.cpf_paciente) && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
+            else if (isValidKey(at.nome_paciente) && mapPacientesByNome[at.nome_paciente.trim().toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.trim().toUpperCase()];
             
             if(pParc && pParc.parceiro) parc = pParc.parceiro.trim().toUpperCase();
         }
@@ -1214,8 +1222,8 @@ async function initLiderancas() {
         let isLider = false;
         let p = null;
         if (at.id_paciente && mapPacientesById[at.id_paciente]) p = mapPacientesById[at.id_paciente];
-        else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) p = mapPacientes[at.cpf_paciente];
-        else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) p = mapPacientesByNome[at.nome_paciente.toUpperCase()];
+        else if (isValidKey(at.cpf_paciente) && mapPacientes[at.cpf_paciente]) p = mapPacientes[at.cpf_paciente];
+        else if (isValidKey(at.nome_paciente) && mapPacientesByNome[at.nome_paciente.trim().toUpperCase()]) p = mapPacientesByNome[at.nome_paciente.trim().toUpperCase()];
         
         if (p) {
             ind = p.indicacao || at.indicacao;
