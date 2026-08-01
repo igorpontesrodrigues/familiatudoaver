@@ -1012,11 +1012,6 @@ window.auditarAtendimentosOrfaos = async function(btn) {
         
         pSnap.forEach(doc => {
             validIds.add(doc.id);
-            const d = doc.data();
-            if (d.cpf) {
-                validCpfs.add(String(d.cpf).replace(/\D/g, ''));
-                validCpfs.add(String(d.cpf)); // Formato com máscara também por precaução
-            }
         });
 
         // 2. Pegar todos os atendimentos e verificar
@@ -1025,26 +1020,19 @@ window.auditarAtendimentosOrfaos = async function(btn) {
 
         aSnap.forEach(doc => {
             const d = doc.data();
-            let isOrfao = true;
 
-            // Se tem CPF vinculado e existe no Set de CPFs válidos
-            if (d.cpf_paciente && validCpfs.has(String(d.cpf_paciente).replace(/\D/g, ''))) {
-                isOrfao = false;
-            } else if (d.cpf_paciente && validCpfs.has(String(d.cpf_paciente))) {
-                isOrfao = false;
-            }
-            
-            // Se tem paciente_id e ele existe nos IDs válidos
-            if (d.paciente_id && validIds.has(d.paciente_id)) {
-                isOrfao = false;
-            }
+            // Um atendimento é considerado órfão quando:
+            // Não tem id_paciente, OU o id_paciente não aponta para nenhum paciente existente.
+            // O CPF sozinho não é suficiente — pode haver CPF preenchido mas sem cadastro real.
+            const temVinculo = d.id_paciente && validIds.has(d.id_paciente);
 
-            if (isOrfao) {
+            if (!temVinculo) {
                 orfaos.push({
                     id: doc.id,
                     data_abertura: d.data_abertura || 'N/A',
                     nome: d.nome_paciente || 'Sem Nome',
-                    cpf: d.cpf_paciente || d.paciente_id || 'Sem Identificador'
+                    cpf: d.cpf_paciente || d.id_paciente || 'Sem Identificador',
+                    indicacao: d.indicacao || '—'
                 });
             }
         });
@@ -1052,7 +1040,7 @@ window.auditarAtendimentosOrfaos = async function(btn) {
         totalSpan.innerText = orfaos.length;
 
         if (orfaos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-emerald-600 font-bold"><i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2"></i>Nenhum atendimento órfão encontrado! Tudo certo.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-emerald-600 font-bold"><i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2"></i>Nenhum atendimento órfão encontrado! Tudo certo.</td></tr>';
         } else {
             let html = '';
             orfaos.forEach((orfao, idx) => {
@@ -1061,6 +1049,7 @@ window.auditarAtendimentosOrfaos = async function(btn) {
                         <td class="px-4 py-3">${orfao.data_abertura}</td>
                         <td class="px-4 py-3 font-bold">${orfao.nome}</td>
                         <td class="px-4 py-3 font-mono text-xs text-slate-500">${orfao.cpf}</td>
+                        <td class="px-4 py-3 text-xs text-slate-600">${orfao.indicacao}</td>
                         <td class="px-4 py-3">
                             <button onclick="apagarOrfao('${orfao.id}', ${idx})" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded font-bold transition flex items-center gap-1">
                                 <i data-lucide="trash-2" class="w-3 h-3"></i> Apagar Atendimento
