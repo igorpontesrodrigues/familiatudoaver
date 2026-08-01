@@ -1012,6 +1012,10 @@ window.auditarAtendimentosOrfaos = async function(btn) {
         
         pSnap.forEach(doc => {
             validIds.add(doc.id);
+            const d = doc.data();
+            if (d.cpf) {
+                validCpfs.add(String(d.cpf).replace(/\D/g, ''));
+            }
         });
 
         // 2. Pegar todos os atendimentos e verificar
@@ -1021,10 +1025,14 @@ window.auditarAtendimentosOrfaos = async function(btn) {
         aSnap.forEach(doc => {
             const d = doc.data();
 
-            // Um atendimento é considerado órfão quando:
-            // Não tem id_paciente, OU o id_paciente não aponta para nenhum paciente existente.
-            // O CPF sozinho não é suficiente — pode haver CPF preenchido mas sem cadastro real.
-            const temVinculo = d.id_paciente && validIds.has(d.id_paciente);
+            // Um atendimento é órfão SOMENTE se não tem NENHUM vínculo válido:
+            // 1. id_paciente apontando para um paciente existente
+            // 2. paciente_id apontando para um paciente existente (campo legado)
+            // 3. cpf_paciente correspondendo ao CPF de algum paciente cadastrado
+            const temVinculo = 
+                (d.id_paciente && validIds.has(d.id_paciente)) ||
+                (d.paciente_id && validIds.has(d.paciente_id)) ||
+                (d.cpf_paciente && validCpfs.has(String(d.cpf_paciente).replace(/\D/g, '')));
 
             if (!temVinculo) {
                 orfaos.push({
