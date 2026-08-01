@@ -134,8 +134,9 @@ async function abrirModalContatoPendencia(at) {
             pEncontrado = window.todosPacientes.find(p => p.nome === at.nome_paciente);
         }
         if (pEncontrado) {
-            pacienteId = pEncontrado.id;
-            data = pEncontrado;
+            pacienteId = pEncontrado.id || pEncontrado._id || pEncontrado.uid;
+            data = { ...pEncontrado };
+            if (!pacienteId && pEncontrado.docId) pacienteId = pEncontrado.docId;
         }
     }
 
@@ -174,7 +175,7 @@ async function abrirModalContatoPendencia(at) {
         if(h < 12) saudacao = "Bom dia";
         else if (h < 18) saudacao = "Boa tarde";
 
-        const textoBase = `${saudacao} ${primeiroNome}!\n\nAinda não conseguimos o seu ${procStr}. Estamos acompanhando a solicitação e, assim que tivermos um retorno, entraremos em contato imediatamente. Agradecemos pela compreensão.\n\nGostaria de saber: você quer continuar aguardando ou já conseguiu o atendimento?`;
+        const textoBase = `${saudacao} ${primeiroNome}!\n\nPassando para te atualizar sobre a sua solicitação de atendimento. Ainda não conseguimos agendar, mas estamos acompanhando de perto e assim que tiver novidade entramos em contato.\n\nVocê ainda está aguardando ou já conseguiu ser atendido em outro lugar?`;
         
         document.getElementById('txt-contato-pendencia').value = textoBase;
         
@@ -201,7 +202,10 @@ function fecharModalContatoPendencia() {
     const modal = document.getElementById('modal-contato-pendencia');
     if(modal) {
         modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex'); // Remove flex para não interceptar cliques quando oculto
+        }, 300);
     }
 }
 
@@ -277,7 +281,10 @@ async function salvarNovoTelefonePendencia() {
     }
     
     const pacienteId = window.pendenciaPacienteId;
-    if (!pacienteId) return;
+    if (!pacienteId) {
+        if(typeof showMessage === 'function') showMessage("Não foi possível identificar o paciente. Tente fechar e abrir o contato novamente.", "error");
+        return;
+    }
 
     try {
         const btnSalvar = document.querySelector('#bloco-telefone-faltante button');
