@@ -978,24 +978,37 @@ window.reconciliarIndicacoes = async function() {
     
     try {
         const pacSnap = await window.getDocs(window.collection(window.db, 'pacientes'));
-        const pacientesMap = {};
-        pacSnap.forEach(d => { pacientesMap[d.data().cpf] = { id: d.id, ...d.data() }; });
+        const pacientesMapId = {};
+        const pacientesMapCpf = {};
+        const pacientesMapNome = {};
+        pacSnap.forEach(d => { 
+            const p = { id: d.id, ...d.data() };
+            pacientesMapId[p.id] = p;
+            if(p.cpf) pacientesMapCpf[p.cpf] = p;
+            if(p.nome) pacientesMapNome[p.nome.toUpperCase()] = p;
+        });
         
         const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
-        const atendimentosMap = {}; // grouped by cpf
+        const atendimentosMap = {}; // grouped by paciente ID
         atSnap.forEach(d => { 
             const at = { id: d.id, ...d.data() };
-            if(!at.cpf_paciente) return;
-            if(!atendimentosMap[at.cpf_paciente]) atendimentosMap[at.cpf_paciente] = [];
-            atendimentosMap[at.cpf_paciente].push(at);
+            
+            let p = null;
+            if(at.id_paciente && pacientesMapId[at.id_paciente]) p = pacientesMapId[at.id_paciente];
+            else if(at.cpf_paciente && pacientesMapCpf[at.cpf_paciente]) p = pacientesMapCpf[at.cpf_paciente];
+            else if(at.nome_paciente && pacientesMapNome[at.nome_paciente.toUpperCase()]) p = pacientesMapNome[at.nome_paciente.toUpperCase()];
+            
+            if(!p) return; // orfão
+            if(!atendimentosMap[p.id]) atendimentosMap[p.id] = [];
+            atendimentosMap[p.id].push(at);
         });
         
         const batchPacientes = [];
         const batchAtendimentos = [];
         let htmlLog = '<table class="w-full text-left text-sm"><thead class="bg-slate-100 text-slate-700 text-xs uppercase"><tr><th class="p-2">Munícipe</th><th class="p-2">Situação Atual</th><th class="p-2">Correção que será feita</th></tr></thead><tbody class="divide-y divide-slate-100">';
         
-        Object.keys(atendimentosMap).forEach(cpf => {
-            const p = pacientesMap[cpf];
+        Object.keys(atendimentosMap).forEach(pacId => {
+            const p = pacientesMapId[pacId];
             if(!p) return;
             
             const pInd = (p.indicacao || '').trim().toUpperCase();

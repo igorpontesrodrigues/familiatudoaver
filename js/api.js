@@ -691,6 +691,7 @@ window.selecionarPacienteAtendimento = function(p) {
     resDiv.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> ${p.nome}</span>`;
     document.getElementById('hidden_cpf').value = p.cpf || '';
     document.getElementById('hidden_nome').value = p.nome;
+    if(document.getElementById('hidden_id_paciente')) document.getElementById('hidden_id_paciente').value = p.id || '';
     document.getElementById('busca_cpf').value = p.cpf || p.nome;
 
     // Limpa todos os campos do formulário antes de mostrar (evita dados do paciente anterior)
@@ -1119,8 +1120,14 @@ async function initLiderancas() {
     const hoje = new Date();
 
     const mapPacientes = {};
+    const mapPacientesById = {};
+    const mapPacientesByNome = {};
     if (dashboardRawData.pacientes) {
-        dashboardRawData.pacientes.forEach(p => mapPacientes[p.cpf] = p);
+        dashboardRawData.pacientes.forEach(p => {
+            if (p.cpf) mapPacientes[p.cpf] = p;
+            if (p.id) mapPacientesById[p.id] = p;
+            if (p.nome) mapPacientesByNome[p.nome.toUpperCase()] = p;
+        });
     }
 
     // Coleta Parceiros Únicos para popular o filtro lider-filter-parceiro
@@ -1134,8 +1141,13 @@ async function initLiderancas() {
         let parc = null;
         if (at.parceiro && at.parceiro.trim() !== '') {
             parc = at.parceiro.trim().toUpperCase();
-        } else if (at.cpf_paciente && mapPacientes[at.cpf_paciente] && mapPacientes[at.cpf_paciente].parceiro) {
-            parc = mapPacientes[at.cpf_paciente].parceiro.trim().toUpperCase();
+        } else {
+            let pParc = null;
+            if (at.id_paciente && mapPacientesById[at.id_paciente]) pParc = mapPacientesById[at.id_paciente];
+            else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
+            else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.toUpperCase()];
+            
+            if(pParc && pParc.parceiro) parc = pParc.parceiro.trim().toUpperCase();
         }
         if(parc && parc.trim() !== '') parceirosUnicos.add(parc.trim().toUpperCase());
     });
@@ -1182,8 +1194,13 @@ async function initLiderancas() {
         let parc = null;
         if (at.parceiro && at.parceiro.trim() !== '') {
             parc = at.parceiro.trim().toUpperCase();
-        } else if (at.cpf_paciente && mapPacientes[at.cpf_paciente] && mapPacientes[at.cpf_paciente].parceiro) {
-            parc = mapPacientes[at.cpf_paciente].parceiro.trim().toUpperCase();
+        } else {
+            let pParc = null;
+            if (at.id_paciente && mapPacientesById[at.id_paciente]) pParc = mapPacientesById[at.id_paciente];
+            else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) pParc = mapPacientes[at.cpf_paciente];
+            else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) pParc = mapPacientesByNome[at.nome_paciente.toUpperCase()];
+            
+            if(pParc && pParc.parceiro) parc = pParc.parceiro.trim().toUpperCase();
         }
         parc = (parc || 'SEM PARCEIRO').trim().toUpperCase();
         
@@ -1195,9 +1212,12 @@ async function initLiderancas() {
     filtrados.forEach(at => {
         let ind = null;
         let isLider = false;
+        let p = null;
+        if (at.id_paciente && mapPacientesById[at.id_paciente]) p = mapPacientesById[at.id_paciente];
+        else if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) p = mapPacientes[at.cpf_paciente];
+        else if (at.nome_paciente && mapPacientesByNome[at.nome_paciente.toUpperCase()]) p = mapPacientesByNome[at.nome_paciente.toUpperCase()];
         
-        if (at.cpf_paciente && mapPacientes[at.cpf_paciente]) {
-            const p = mapPacientes[at.cpf_paciente];
+        if (p) {
             ind = p.indicacao || at.indicacao;
             isLider = ((p.lideranca && p.lideranca.trim().toUpperCase() === 'SIM') || (at.lideranca && at.lideranca.trim().toUpperCase() === 'SIM'));
         } else {

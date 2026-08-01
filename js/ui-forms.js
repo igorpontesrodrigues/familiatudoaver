@@ -165,7 +165,8 @@ async function submitAtendimento(e) {
             regulacao: document.getElementById('field_regulacao')?.value || '',
             status: document.getElementById('field_status_atendimento')?.value || '',
             obs_atendimento: document.getElementById('field_obs_atendimento')?.value || '',
-            anexos_link: document.getElementById('field_anexos_link')?.value || ''
+            anexos_link: document.getElementById('field_anexos_link')?.value || '',
+            id_paciente: document.getElementById('hidden_id_paciente')?.value || ''
         };
 
         if(await sendData('registerService', data, 'loading-atendimento')) { 
@@ -193,7 +194,8 @@ async function submitAtendimento(e) {
         return {
             ...cleanItem,
             cpf_paciente: cpf,
-            nome_paciente: nome
+            nome_paciente: nome,
+            id_paciente: document.getElementById('hidden_id_paciente')?.value || ''
         };
     });
 
@@ -506,6 +508,7 @@ function resetFormAtendimento(preserveSearch = false) {
         // Limpa campos ocultos e visuais de paciente
         document.getElementById('hidden_cpf').value = "";
         document.getElementById('hidden_nome').value = "";
+        if(document.getElementById('hidden_id_paciente')) document.getElementById('hidden_id_paciente').value = "";
         document.getElementById('busca_cpf').value = ""; 
         
         // Esconde formulário
