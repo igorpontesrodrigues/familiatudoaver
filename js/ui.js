@@ -676,13 +676,31 @@ function abrirDetalheAtendimento(at) {
         (at.status === 'CANCELADO' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600')));
 
     document.getElementById('det-data').innerText = at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-';
-    document.getElementById('det-tipo').innerText = (at.tipo_servico || '') + (at.tipo ? ` - ${at.tipo}` : '');
-    document.getElementById('det-servico').innerText = at.especialidade || '-';
+    
+    // Tipo / Sub-tipo
+    let tipoTxt = at.tipo_servico || '';
+    if (at.tipo && at.tipo !== at.tipo_servico) tipoTxt += (tipoTxt ? ' / ' : '') + at.tipo;
+    document.getElementById('det-tipo').innerText = tipoTxt || '-';
+    
+    // Serviço/Especialidade + Procedimento
+    let servicoTxt = at.especialidade || '';
+    if (at.procedimento) servicoTxt += (servicoTxt ? ' — ' : '') + at.procedimento;
+    document.getElementById('det-servico').innerText = servicoTxt || '-';
+    
     document.getElementById('det-local').innerText = at.local || '-';
     document.getElementById('det-parceiro').innerText = at.parceiro || '-';
     
+    // Prioridade/Triagem
+    const prioridade = at.prioridade || at.triagem || at.urgencia || '-';
+    document.getElementById('det-prioridade').innerText = prioridade;
+    
     document.getElementById('det-marcacao').innerText = at.data_marcacao ? at.data_marcacao.split('-').reverse().join('/') : '-';
     document.getElementById('det-risco').innerText = at.data_risco ? at.data_risco.split('-').reverse().join('/') : '-';
+    
+    // Data de Conclusão / Prazo
+    const conclusao = at.data_conclusao ? at.data_conclusao.split('-').reverse().join('/') : (at.prazo ? at.prazo.split('-').reverse().join('/') : '-');
+    document.getElementById('det-conclusao').innerText = conclusao;
+    
     document.getElementById('det-obs').innerText = at.obs_atendimento || 'Sem observações.';
 
     // írea de botões no rodapé do modal
