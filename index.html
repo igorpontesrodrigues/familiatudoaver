@@ -1688,7 +1688,7 @@
                         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100" id="titulo-modal-relatorio">Detalhes</h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Clique para ver mais detalhes</p>
                     </div>
-                    <button onclick="document.getElementById('modal-lista-relatorio').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:text-slate-300 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <button onclick="const m=document.getElementById('modal-lista-relatorio'); m.classList.add('hidden'); m.classList.remove('flex');" class="text-slate-400 hover:text-slate-600 dark:text-slate-300 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
                 <div class="overflow-y-auto flex-1 p-0">
                     <div class="overflow-x-auto">

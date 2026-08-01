@@ -739,7 +739,9 @@ function abrirListaRelatorio(tipo, index) {
     const dados = window.dadosRelatorioCache[tipo][index];
     if(!dados) return;
 
-    document.getElementById('modal-lista-relatorio').classList.remove('hidden');
+    const _mlr = document.getElementById('modal-lista-relatorio');
+    _mlr.classList.remove('hidden');
+    _mlr.classList.add('flex');
     document.getElementById('titulo-modal-relatorio').innerText = `${dados.nome} (${tipo === 'lideranca' ? dados.total_pacientes : dados.qtd})`;
     const tbody = document.getElementById('tbody-modal-relatorio');
     tbody.innerHTML = '';
@@ -774,7 +776,7 @@ function abrirListaRelatorio(tipo, index) {
                 <td class="px-6 py-3 text-right"><span class="font-bold text-slate-600">${tel}</span></td>
             `;
             tr.onclick = () => {
-                document.getElementById('modal-lista-relatorio').classList.add('hidden');
+                const _m = document.getElementById('modal-lista-relatorio'); _m.classList.add('hidden'); _m.classList.remove('flex');
                 switchTab('lista-pacientes'); // Navega pra tela de pacientes
                 if(typeof abrirEdicaoDireta === 'function') abrirEdicaoDireta(item.cpf, item.id);
             };
@@ -793,7 +795,7 @@ function abrirListaRelatorio(tipo, index) {
                 <td class="px-6 py-3 text-right"><span class="${badgeEspera} px-2 py-1 rounded text-xs font-bold">${item.diasEspera} dias</span></td>
             `;
             tr.onclick = () => {
-                document.getElementById('modal-lista-relatorio').classList.add('hidden');
+                const _m = document.getElementById('modal-lista-relatorio'); _m.classList.add('hidden'); _m.classList.remove('flex');
                 if(typeof abrirDetalheAtendimento === 'function') abrirDetalheAtendimento(window[tempId]);
             };
         }

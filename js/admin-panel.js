@@ -589,6 +589,7 @@ window.abrirModalDetalhesInteligente = function(index) {
     if(!modal) return;
     
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
     document.getElementById('titulo-modal-relatorio').innerText = `Detalhes de: ${item.nome} (${item.countPacientes + item.countAtendimentos} registros)`;
     
     document.getElementById('th-col1').innerText = 'Data/Tipo';
@@ -606,7 +607,7 @@ window.abrirModalDetalhesInteligente = function(index) {
         item.pacientes.forEach(p => {
             const tel = p.tel || p.tel1 || p.telefone || p.whatsapp || '-';
             html += `
-            <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="document.getElementById('modal-lista-relatorio').classList.add('hidden'); if(typeof abrirEdicaoDireta === 'function') { switchTab('lista-pacientes'); abrirEdicaoDireta('${p.cpf || ''}', '${p._id}'); }">
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="const ml=document.getElementById('modal-lista-relatorio'); ml.classList.add('hidden'); ml.classList.remove('flex'); if(typeof abrirEdicaoDireta === 'function') { switchTab('lista-pacientes'); abrirEdicaoDireta('${p.cpf || ''}', '${p._id}'); }">
                 <td class="px-6 py-3 font-mono text-xs text-slate-500">Nasc: ${p.nascimento ? p.nascimento.split('-').reverse().join('/') : '-'}</td>
                 <td class="px-6 py-3">
                     <div class="font-bold text-slate-700 text-sm uppercase">${p.nome || 'Sem nome'}</div>
@@ -626,7 +627,7 @@ window.abrirModalDetalhesInteligente = function(index) {
             else if(at.status === 'PENDENTE') badge = "bg-orange-100 text-orange-700";
 
             html += `
-            <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="document.getElementById('modal-lista-relatorio').classList.add('hidden'); if(typeof abrirDetalheAtendimento === 'function') abrirDetalheAtendimento(window.liderancasInteligenteCache[${index}].atendimentos.find(a=>a._id==='${at._id}'));">
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="const ml=document.getElementById('modal-lista-relatorio'); ml.classList.add('hidden'); ml.classList.remove('flex'); if(typeof abrirDetalheAtendimento === 'function') abrirDetalheAtendimento(window.liderancasInteligenteCache[${index}].atendimentos.find(a=>a._id==='${at._id}'));">
                 <td class="px-6 py-3 font-mono text-xs text-slate-500">${at.data_abertura ? at.data_abertura.split('-').reverse().join('/') : '-'}</td>
                 <td class="px-6 py-3">
                     <div class="font-bold text-slate-700 text-sm uppercase">${at.nome_paciente || at.nome || 'Sem nome'}</div>
