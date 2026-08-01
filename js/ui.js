@@ -682,10 +682,11 @@ function abrirDetalheAtendimento(at) {
     if (at.tipo && at.tipo !== at.tipo_servico) tipoTxt += (tipoTxt ? ' / ' : '') + at.tipo;
     document.getElementById('det-tipo').innerText = tipoTxt || '-';
     
-    // Serviço/Especialidade + Procedimento
-    let servicoTxt = at.especialidade || '';
-    if (at.procedimento) servicoTxt += (servicoTxt ? ' — ' : '') + at.procedimento;
-    document.getElementById('det-servico').innerText = servicoTxt || '-';
+    // Serviço/Especialidade
+    document.getElementById('det-servico').innerText = at.especialidade || '-';
+    
+    // Procedimento separado
+    document.getElementById('det-procedimento').innerText = at.procedimento || '-';
     
     document.getElementById('det-local').innerText = at.local || '-';
     document.getElementById('det-parceiro').innerText = at.parceiro || '-';
