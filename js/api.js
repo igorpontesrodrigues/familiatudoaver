@@ -1009,24 +1009,9 @@ async function initParceiros() {
     }
 
     const parceiroStats = {};
+    // PESSOAS é contado a partir dos atendimentos — pessoas distintas por parceiro
+    const _parcPessoasSet = {};
 
-    if (dashboardRawData.pacientes) {
-        dashboardRawData.pacientes.forEach(p => {
-            let parc = p.parceiro; 
-            if (parc && parc.trim() !== '') {
-                parc = parc.trim().toUpperCase();
-                let ind = p.indicacao ? p.indicacao.trim().toUpperCase() : 'SEM INDICAÇÃO';
-                
-                if (fLideranca && ind !== fLideranca) return;
-
-                if(!parceiroStats[parc]) {
-                    parceiroStats[parc] = { nome: parc, total_pacientes: 0, total: 0, concluido: 0, andamento: 0, pendente: 0, cancelado: 0, qtd: 0, isLider: false, lista: [], listaPacientes: [] };
-                }
-                parceiroStats[parc].total_pacientes++;
-                parceiroStats[parc].listaPacientes.push(p);
-            }
-        });
-    }
 
     const filtrados = dashboardRawData.atendimentos.filter(at => {
         const [y, m, d] = at.data_abertura ? at.data_abertura.split('-') : ['','',''];
@@ -1068,6 +1053,16 @@ async function initParceiros() {
         const statP = parceiroStats[parc];
         statP.total++;
         statP.qtd++;
+
+        // Conta PESSOAS distintas via Set
+        const pessoaKeyP = (at.id_paciente || at.cpf_paciente || at.nome_paciente || '').trim().toUpperCase();
+        if (pessoaKeyP) {
+            if (!_parcPessoasSet[parc]) _parcPessoasSet[parc] = new Set();
+            if (!_parcPessoasSet[parc].has(pessoaKeyP)) {
+                _parcPessoasSet[parc].add(pessoaKeyP);
+                statP.total_pacientes++;
+            }
+        }
         
         const st = (at.status || '').toUpperCase().trim();
         if(st === 'CONCLUIDO' || st === 'CONCLUÍDO' || st === 'RESOLVIDO') statP.concluido++;
@@ -1168,30 +1163,10 @@ async function initLiderancas() {
     }
 
     const liderancaStats = {};
-    
-    if (dashboardRawData.pacientes) {
-        dashboardRawData.pacientes.forEach(p => {
-            let ind = p.indicacao;
-            let parc = p.parceiro ? p.parceiro.trim().toUpperCase() : 'SEM PARCEIRO';
-            let isLider = (p.lideranca && p.lideranca.trim().toUpperCase() === 'SIM');
-            
-            if (fParceiro && parc !== fParceiro) return;
-            
-            if (!ind || ind.trim() === '' || ind === 'null' || ind === 'undefined') {
-                ind = 'SEM INDICAÇÃO';
-            } else {
-                ind = ind.trim().toUpperCase();
-            }
-            
-            if(!liderancaStats[ind]) {
-                liderancaStats[ind] = { nome: ind, total_pacientes: 0, total: 0, concluido: 0, andamento: 0, pendente: 0, cancelado: 0, qtd: 0, isLider: false, lista: [], listaPacientes: [] };
-            }
-            
-            liderancaStats[ind].total_pacientes++;
-            liderancaStats[ind].listaPacientes.push(p);
-            if(isLider) liderancaStats[ind].isLider = true;
-        });
-    }
+    // PESSOAS é contado a partir dos atendimentos — pessoas distintas por liderança
+    // (independente de qual é a indicação oficial do cadastro do paciente)
+    const _liderPessoasSet = {}; // ind → Set de identificadores únicos de paciente
+
 
     const filtrados = dashboardRawData.atendimentos.filter(at => {
         const [y, m, d] = at.data_abertura ? at.data_abertura.split('-') : ['','',''];
@@ -1247,6 +1222,17 @@ async function initLiderancas() {
         if(isLider) stat.isLider = true;
         stat.total++;
         stat.qtd++;
+        
+        // Conta PESSOAS distintas via Set — usa id_paciente, cpf ou nome como chave única
+        const pessoaKey = (at.id_paciente || at.cpf_paciente || at.nome_paciente || '').trim().toUpperCase();
+        if (pessoaKey) {
+            if (!_liderPessoasSet[ind]) _liderPessoasSet[ind] = new Set();
+            if (!_liderPessoasSet[ind].has(pessoaKey)) {
+                _liderPessoasSet[ind].add(pessoaKey);
+                stat.total_pacientes++;
+                if (p) stat.listaPacientes.push(p);
+            }
+        }
         
         const st = (at.status || '').toUpperCase().trim();
         if(st === 'CONCLUIDO' || st === 'CONCLUÍDO' || st === 'RESOLVIDO') stat.concluido++;
