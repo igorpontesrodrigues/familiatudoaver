@@ -1018,7 +1018,7 @@ window.reconciliarIndicacoes = async function() {
             let situacao = '';
             let acao = '';
             
-            const ats = atendimentosMap[cpf];
+            const ats = atendimentosMap[pacId];
             const atsComInd = ats.filter(a => isValidInd((a.indicacao || '').trim().toUpperCase()));
             
             if (isValidInd(pInd)) {
@@ -1085,7 +1085,7 @@ window.reconciliarIndicacoes = async function() {
             
             // Se houve log
             if(situacao) {
-                htmlLog += `<tr class="hover:bg-slate-50"><td class="p-2 font-bold uppercase">${p.nome || cpf}</td><td class="p-2 text-slate-500">${situacao}</td><td class="p-2">${acao}</td></tr>`;
+                htmlLog += `<tr class="hover:bg-slate-50"><td class="p-2 font-bold uppercase">${p.nome || pacId}</td><td class="p-2 text-slate-500">${situacao}</td><td class="p-2">${acao}</td></tr>`;
             }
         });
         
