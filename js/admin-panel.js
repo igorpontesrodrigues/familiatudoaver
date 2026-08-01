@@ -998,32 +998,17 @@ window.reconciliarIndicacoes = async function() {
         
         const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
         const atendimentosMap = {}; // grouped by paciente ID
-        const _debugVinculos = {}; // DEBUG: track how each attendance was linked
         atSnap.forEach(d => { 
             const at = { id: d.id, ...d.data() };
             
-            let p = null;
-            let _debugVia = null;
-            if(at.id_paciente && pacientesMapId[at.id_paciente]) { p = pacientesMapId[at.id_paciente]; _debugVia = 'id'; }
-            else if(isValidKey(at.cpf_paciente) && pacientesMapCpf[at.cpf_paciente]) { p = pacientesMapCpf[at.cpf_paciente]; _debugVia = 'cpf:' + at.cpf_paciente; }
-            else if(isValidKey(at.nome_paciente) && pacientesMapNome[at.nome_paciente.trim().toUpperCase()]) { p = pacientesMapNome[at.nome_paciente.trim().toUpperCase()]; _debugVia = 'nome:' + at.nome_paciente.trim().toUpperCase(); }
+            // Reconciliação usa APENAS id_paciente como âncora.
+            // Matching por CPF/nome é arriscado demais aqui — pode atribuir atendimentos de outras pessoas.
+            if(!at.id_paciente || !pacientesMapId[at.id_paciente]) return; // orfão ou sem vínculo claro
+            const p = pacientesMapId[at.id_paciente];
             
-            if(!p) return; // orfão
-            if(!atendimentosMap[p.id]) { atendimentosMap[p.id] = []; _debugVinculos[p.id] = {}; }
+            if(!atendimentosMap[p.id]) atendimentosMap[p.id] = [];
             atendimentosMap[p.id].push(at);
-            // DEBUG: contar por qual chave cada atendimento foi vinculado
-            if(_debugVia) _debugVinculos[p.id][_debugVia] = (_debugVinculos[p.id][_debugVia] || 0) + 1;
         });
-        // DEBUG: logar pacientes com mais de 10 atendimentos e a distribuição de chaves
-        console.group('%c[RECONCILIAÇÃO DEBUG] Pacientes com +10 atendimentos', 'color: orange; font-weight: bold;');
-        Object.keys(atendimentosMap).forEach(pacId => {
-            const total = atendimentosMap[pacId].length;
-            if(total > 10) {
-                const pac = pacientesMapId[pacId];
-                console.log(`📋 ${pac?.nome || pacId} (${total} atend.) | Vínculos:`, _debugVinculos[pacId]);
-            }
-        });
-        console.groupEnd();
         
         const batchPacientes = [];
         const batchAtendimentos = [];
