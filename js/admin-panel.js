@@ -963,112 +963,192 @@ window.atualizarOpcoesSelectAdmin = function() {
     }
 };
 
+window.batchReconciliacaoGlobal = { pacientes: [], atendimentos: [] };
+
 window.reconciliarIndicacoes = async function() {
-    const btn = document.getElementById('btn-reconciliar');
-    const res = document.getElementById('resultado-reconciliacao');
-    if(!btn || !res) return;
+    const modal = document.getElementById('modal-preview-reconciliacao');
+    const content = document.getElementById('preview-reconciliacao-content');
+    if(!modal || !content) return;
     
-    if(!confirm('Isso vai analisar todos os pacientes e atendimentos para alinhar os campos de Indicação e Liderança. Deseja continuar?')) return;
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processando...';
-    res.classList.remove('hidden');
-    res.innerHTML = 'Baixando banco de dados...<br>';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    content.innerHTML = '<div class="text-center py-10"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto text-teal-600 mb-4"></i><p>Analisando o banco de dados. Isso pode levar alguns segundos...</p></div>';
+    if(typeof lucide !== 'undefined') lucide.createIcons();
+    document.getElementById('btn-confirmar-reconciliacao').disabled = true;
     
     try {
         const pacSnap = await window.getDocs(window.collection(window.db, 'pacientes'));
-        const pacientes = {};
-        pacSnap.forEach(d => { pacientes[d.id] = { id: d.id, ...d.data() }; });
-        res.innerHTML += `> ${Object.keys(pacientes).length} pacientes carregados.<br>`;
+        const pacientesMap = {};
+        pacSnap.forEach(d => { pacientesMap[d.data().cpf] = { id: d.id, ...d.data() }; });
         
         const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
-        const atendimentos = [];
-        atSnap.forEach(d => { atendimentos.push({ id: d.id, ...d.data() }); });
-        res.innerHTML += `> ${atendimentos.length} atendimentos carregados.<br>`;
-        
-        res.innerHTML += 'Analisando inconsistências...<br>';
-        
-        let correcoesPacientes = 0;
-        let correcoesAtendimentos = 0;
+        const atendimentosMap = {}; // grouped by cpf
+        atSnap.forEach(d => { 
+            const at = { id: d.id, ...d.data() };
+            if(!at.cpf_paciente) return;
+            if(!atendimentosMap[at.cpf_paciente]) atendimentosMap[at.cpf_paciente] = [];
+            atendimentosMap[at.cpf_paciente].push(at);
+        });
         
         const batchPacientes = [];
         const batchAtendimentos = [];
+        let htmlLog = '<table class="w-full text-left text-sm"><thead class="bg-slate-100 text-slate-700 text-xs uppercase"><tr><th class="p-2">Munícipe</th><th class="p-2">Situação Atual</th><th class="p-2">Correção que será feita</th></tr></thead><tbody class="divide-y divide-slate-100">';
         
-        atendimentos.forEach(at => {
-            if(!at.cpf_paciente) return;
-            const p = Object.values(pacientes).find(pac => pac.cpf === at.cpf_paciente);
+        Object.keys(atendimentosMap).forEach(cpf => {
+            const p = pacientesMap[cpf];
             if(!p) return;
             
             const pInd = (p.indicacao || '').trim().toUpperCase();
-            const aInd = (at.indicacao || '').trim().toUpperCase();
+            const isValidInd = (i) => i && i !== 'SEM INDICAÇÃO' && i !== 'NULL' && i !== 'UNDEFINED';
             
-            if(!pInd && aInd && aInd !== 'SEM INDICAÇÃO') {
-                p.indicacao = aInd;
-                if(!batchPacientes.find(x => x.id === p.id)) {
-                    batchPacientes.push({ id: p.id, indicacao: aInd });
+            let finalInd = pInd;
+            let situacao = '';
+            let acao = '';
+            
+            const ats = atendimentosMap[cpf];
+            const atsComInd = ats.filter(a => isValidInd((a.indicacao || '').trim().toUpperCase()));
+            
+            if (isValidInd(pInd)) {
+                // Cenário 1: Munícipe JÁ TEM indicação. Ele é a fonte da verdade.
+                let atsDiferentes = ats.filter(a => (a.indicacao || '').trim().toUpperCase() !== pInd);
+                if(atsDiferentes.length > 0) {
+                    situacao = `Munícipe é da liderança <b>${pInd}</b>, mas tem ${atsDiferentes.length} atendimento(s) com outra indicação (ou sem).`;
+                    acao = `<span class="text-teal-600 font-bold">Atualizar ${atsDiferentes.length} atendimento(s) para ${pInd}</span>`;
+                    atsDiferentes.forEach(a => {
+                        batchAtendimentos.push({ id: a.id, indicacao: pInd, _nome: p.nome });
+                    });
                 }
-            } 
-            else if(pInd && pInd !== 'SEM INDICAÇÃO' && pInd !== aInd) {
-                if(!batchAtendimentos.find(x => x.id === at.id)) {
-                    batchAtendimentos.push({ id: at.id, indicacao: pInd });
+            } else {
+                // Cenário 2: Munícipe NÃO TEM indicação, mas atendimentos tem.
+                if (atsComInd.length > 0) {
+                    // Ordena pra pegar o mais recente primeiro, garantindo consistência
+                    atsComInd.sort((a,b) => (b.data_abertura || '').localeCompare(a.data_abertura || ''));
+                    finalInd = (atsComInd[0].indicacao || '').trim().toUpperCase();
+                    
+                    const atsDiferentesMulti = new Set(atsComInd.map(a => (a.indicacao||'').trim().toUpperCase()));
+                    
+                    if(atsDiferentesMulti.size > 1) {
+                         situacao = `Munícipe s/ indicação, mas tem atendimentos em várias lideranças diferentes: ${Array.from(atsDiferentesMulti).join(', ')}.`;
+                         acao = `<span class="text-amber-600 font-bold">Vincular Munícipe a <b>${finalInd}</b> (a mais recente) e forçar todos os atendimentos para <b>${finalInd}</b></span>`;
+                    } else {
+                         situacao = `Munícipe s/ indicação, mas tem atendimento(s) da liderança <b>${finalInd}</b>.`;
+                         acao = `<span class="text-blue-600 font-bold">Vincular Munícipe a <b>${finalInd}</b></span> e alinhar atendimentos.`;
+                    }
+                    
+                    batchPacientes.push({ id: p.id, indicacao: finalInd, _nome: p.nome });
+                    
+                    // Força todos os atendimentos desse paciente a ter essa mesma indicação final (inclusive os que estavam em branco)
+                    ats.forEach(a => {
+                        if((a.indicacao || '').trim().toUpperCase() !== finalInd) {
+                            batchAtendimentos.push({ id: a.id, indicacao: finalInd, _nome: p.nome });
+                        }
+                    });
                 }
             }
             
+            // Lógica para a flag Liderança (SIM/NÃO)
             const pLider = (p.lideranca || '').trim().toUpperCase();
-            const aLider = (at.lideranca || '').trim().toUpperCase();
+            const atsLider = ats.some(a => (a.lideranca || '').trim().toUpperCase() === 'SIM');
             
-            if(!pLider && aLider === 'SIM') {
-                p.lideranca = 'SIM';
-                const existing = batchPacientes.find(x => x.id === p.id);
-                if(existing) existing.lideranca = 'SIM';
-                else batchPacientes.push({ id: p.id, lideranca: 'SIM' });
+            if(pLider !== 'SIM' && atsLider) {
+                // Atendimento marcado como SIM, mas paciente não. Força paciente pra SIM
+                const bPac = batchPacientes.find(x => x.id === p.id);
+                if(bPac) bPac.lideranca = 'SIM';
+                else batchPacientes.push({ id: p.id, lideranca: 'SIM', _nome: p.nome });
+                if(!situacao) {
+                    situacao = 'Atendimento marcado como Liderança, mas paciente não.';
+                    acao = '<span class="text-blue-600 font-bold">Marcar paciente como Liderança</span>';
+                }
+            } else if (pLider === 'SIM') {
+                // Força os atendimentos pra SIM
+                ats.forEach(a => {
+                    if((a.lideranca || '').trim().toUpperCase() !== 'SIM') {
+                        const bAt = batchAtendimentos.find(x => x.id === a.id);
+                        if(bAt) bAt.lideranca = 'SIM';
+                        else batchAtendimentos.push({ id: a.id, lideranca: 'SIM', _nome: p.nome });
+                    }
+                });
             }
-            else if(pLider === 'SIM' && aLider !== 'SIM') {
-                const existing = batchAtendimentos.find(x => x.id === at.id);
-                if(existing) existing.lideranca = 'SIM';
-                else batchAtendimentos.push({ id: at.id, lideranca: 'SIM' });
+            
+            // Se houve log
+            if(situacao) {
+                htmlLog += `<tr class="hover:bg-slate-50"><td class="p-2 font-bold uppercase">${p.nome || cpf}</td><td class="p-2 text-slate-500">${situacao}</td><td class="p-2">${acao}</td></tr>`;
             }
         });
         
-        res.innerHTML += `> Encontradas ${batchPacientes.length} correções para Pacientes.<br>`;
-        res.innerHTML += `> Encontradas ${batchAtendimentos.length} correções para Atendimentos.<br>`;
+        htmlLog += '</tbody></table>';
         
-        if(batchPacientes.length > 0 || batchAtendimentos.length > 0) {
-            res.innerHTML += 'Aplicando correções no banco... (não feche a página)<br>';
-            
-            for(let i=0; i<batchPacientes.length; i++) {
-                const updateData = {};
-                if(batchPacientes[i].indicacao) updateData.indicacao = batchPacientes[i].indicacao;
-                if(batchPacientes[i].lideranca) updateData.lideranca = batchPacientes[i].lideranca;
-                
-                await window.updateDoc(window.doc(window.db, 'pacientes', batchPacientes[i].id), updateData);
-                correcoesPacientes++;
-                if(i % 10 === 0) res.innerHTML += '.';
-            }
-            
-            for(let i=0; i<batchAtendimentos.length; i++) {
-                const updateData = {};
-                if(batchAtendimentos[i].indicacao) updateData.indicacao = batchAtendimentos[i].indicacao;
-                if(batchAtendimentos[i].lideranca) updateData.lideranca = batchAtendimentos[i].lideranca;
-                
-                await window.updateDoc(window.doc(window.db, 'atendimentos', batchAtendimentos[i].id), updateData);
-                correcoesAtendimentos++;
-                if(i % 10 === 0) res.innerHTML += '.';
-            }
-            
-            res.innerHTML += '<br><span class="text-emerald-600 font-bold">Correções aplicadas com sucesso!</span><br>';
-            if(typeof window.logAuditoria === 'function') {
-                window.logAuditoria('ALTERAÇÃO', 'Ferramentas do Sistema', `Reconciliação de Indicações: ${correcoesPacientes} pacientes e ${correcoesAtendimentos} atendimentos atualizados.`);
-            }
+        window.batchReconciliacaoGlobal = { pacientes: batchPacientes, atendimentos: batchAtendimentos };
+        
+        if(batchPacientes.length === 0 && batchAtendimentos.length === 0) {
+            content.innerHTML = '<div class="text-center py-10"><i data-lucide="check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-4"></i><p class="font-bold text-lg text-emerald-700">Tudo Perfeito!</p><p class="text-slate-500">Nenhuma inconsistência foi encontrada no seu banco de dados.</p></div>';
         } else {
-            res.innerHTML += '<br><span class="text-emerald-600 font-bold">Nenhuma inconsistência encontrada!</span> O banco já está alinhado.<br>';
+            content.innerHTML = `
+                <div class="mb-4 bg-teal-50 border border-teal-100 p-4 rounded-lg flex items-center gap-4 text-teal-800">
+                    <div class="bg-teal-100 p-3 rounded-full shrink-0"><i data-lucide="alert-circle" class="w-6 h-6"></i></div>
+                    <div>
+                        <h3 class="font-bold text-lg">Inconsistências Encontradas!</h3>
+                        <p>Serão modificados <b>${batchPacientes.length} cadastros de munícipes</b> e <b>${batchAtendimentos.length} atendimentos</b>.</p>
+                    </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                    ${htmlLog}
+                </div>
+            `;
+            document.getElementById('btn-confirmar-reconciliacao').disabled = false;
         }
         
     } catch(e) {
-        res.innerHTML += `<br><span class="text-red-500 font-bold">ERRO: ${e.message}</span>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="git-merge" class="w-4 h-4"></i> Reconciliar Novamente';
+        content.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg font-bold">ERRO: ${e.message}</div>`;
+    }
+    
+    if(typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.aplicarReconciliacao = async function() {
+    const btn = document.getElementById('btn-confirmar-reconciliacao');
+    const batchP = window.batchReconciliacaoGlobal.pacientes;
+    const batchA = window.batchReconciliacaoGlobal.atendimentos;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Aplicando...';
+    
+    const content = document.getElementById('preview-reconciliacao-content');
+    content.innerHTML = `<div class="text-center py-10"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto text-teal-600 mb-4"></i><p class="font-bold mb-2">Aplicando alterações no banco de dados...</p><p class="text-sm text-slate-500" id="reconciliacao-progress">Iniciando...</p></div>`;
+    if(typeof lucide !== 'undefined') lucide.createIcons();
+    
+    try {
+        let count = 0;
+        const prog = document.getElementById('reconciliacao-progress');
+        
+        for(let i=0; i<batchP.length; i++) {
+            prog.innerText = `Atualizando munícipe ${i+1} de ${batchP.length}... (${batchP[i]._nome})`;
+            const updateData = {};
+            if(batchP[i].indicacao) updateData.indicacao = batchP[i].indicacao;
+            if(batchP[i].lideranca) updateData.lideranca = batchP[i].lideranca;
+            await window.updateDoc(window.doc(window.db, 'pacientes', batchP[i].id), updateData);
+            count++;
+        }
+        for(let i=0; i<batchA.length; i++) {
+            prog.innerText = `Atualizando atendimento ${i+1} de ${batchA.length}... (${batchA[i]._nome})`;
+            const updateData = {};
+            if(batchA[i].indicacao) updateData.indicacao = batchA[i].indicacao;
+            if(batchA[i].lideranca) updateData.lideranca = batchA[i].lideranca;
+            await window.updateDoc(window.doc(window.db, 'atendimentos', batchA[i].id), updateData);
+            count++;
+        }
+        
+        if(typeof window.logAuditoria === 'function') {
+            window.logAuditoria('ALTERAÇÃO', 'Ferramentas do Sistema', `Reconciliação de Indicações: ${batchP.length} pacientes e ${batchA.length} atendimentos atualizados.`);
+        }
+        
+        content.innerHTML = '<div class="text-center py-10"><i data-lucide="check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-4"></i><p class="font-bold text-lg text-emerald-700">Reconciliação Concluída!</p><p class="text-slate-500">O banco de dados foi padronizado com sucesso. Recarregue a página para ver os gráficos atualizados.</p></div>';
         if(typeof lucide !== 'undefined') lucide.createIcons();
+        btn.style.display = 'none';
+        
+    } catch(e) {
+         content.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg font-bold">ERRO NA GRAVAÇÃO: ${e.message}</div>`;
+         btn.disabled = false;
+         btn.innerHTML = 'Tentar Novamente';
     }
 };
