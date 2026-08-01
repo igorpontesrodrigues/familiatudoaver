@@ -998,18 +998,32 @@ window.reconciliarIndicacoes = async function() {
         
         const atSnap = await window.getDocs(window.collection(window.db, 'atendimentos'));
         const atendimentosMap = {}; // grouped by paciente ID
+        const _debugVinculos = {}; // DEBUG: track how each attendance was linked
         atSnap.forEach(d => { 
             const at = { id: d.id, ...d.data() };
             
             let p = null;
-            if(at.id_paciente && pacientesMapId[at.id_paciente]) p = pacientesMapId[at.id_paciente];
-            else if(isValidKey(at.cpf_paciente) && pacientesMapCpf[at.cpf_paciente]) p = pacientesMapCpf[at.cpf_paciente];
-            else if(isValidKey(at.nome_paciente) && pacientesMapNome[at.nome_paciente.trim().toUpperCase()]) p = pacientesMapNome[at.nome_paciente.trim().toUpperCase()];
+            let _debugVia = null;
+            if(at.id_paciente && pacientesMapId[at.id_paciente]) { p = pacientesMapId[at.id_paciente]; _debugVia = 'id'; }
+            else if(isValidKey(at.cpf_paciente) && pacientesMapCpf[at.cpf_paciente]) { p = pacientesMapCpf[at.cpf_paciente]; _debugVia = 'cpf:' + at.cpf_paciente; }
+            else if(isValidKey(at.nome_paciente) && pacientesMapNome[at.nome_paciente.trim().toUpperCase()]) { p = pacientesMapNome[at.nome_paciente.trim().toUpperCase()]; _debugVia = 'nome:' + at.nome_paciente.trim().toUpperCase(); }
             
             if(!p) return; // orfão
-            if(!atendimentosMap[p.id]) atendimentosMap[p.id] = [];
+            if(!atendimentosMap[p.id]) { atendimentosMap[p.id] = []; _debugVinculos[p.id] = {}; }
             atendimentosMap[p.id].push(at);
+            // DEBUG: contar por qual chave cada atendimento foi vinculado
+            if(_debugVia) _debugVinculos[p.id][_debugVia] = (_debugVinculos[p.id][_debugVia] || 0) + 1;
         });
+        // DEBUG: logar pacientes com mais de 10 atendimentos e a distribuição de chaves
+        console.group('%c[RECONCILIAÇÃO DEBUG] Pacientes com +10 atendimentos', 'color: orange; font-weight: bold;');
+        Object.keys(atendimentosMap).forEach(pacId => {
+            const total = atendimentosMap[pacId].length;
+            if(total > 10) {
+                const pac = pacientesMapId[pacId];
+                console.log(`📋 ${pac?.nome || pacId} (${total} atend.) | Vínculos:`, _debugVinculos[pacId]);
+            }
+        });
+        console.groupEnd();
         
         const batchPacientes = [];
         const batchAtendimentos = [];
@@ -1033,8 +1047,7 @@ window.reconciliarIndicacoes = async function() {
                 // Cenário 1: Munícipe JÁ TEM indicação. Ele é a fonte da verdade.
                 let atsDiferentes = ats.filter(a => (a.indicacao || '').trim().toUpperCase() !== pInd);
                 if(atsDiferentes.length > 0) {
-                    const exemplos = atsDiferentes.slice(0, 3).map(a => a.nome_paciente || 'Sem Nome').join(', ');
-                    situacao = `Munícipe é da liderança <b>${pInd}</b>, mas tem ${atsDiferentes.length} atendimento(s) com outra indicação (ou sem). <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
+                    situacao = `Munícipe é da liderança <b>${pInd}</b>, mas tem ${atsDiferentes.length} atendimento(s) com outra indicação (ou sem).`;
                     acao = `<span class="text-teal-600 font-bold">Atualizar ${atsDiferentes.length} atendimento(s) para ${pInd}</span>`;
                     atsDiferentes.forEach(a => {
                         batchAtendimentos.push({ id: a.id, indicacao: pInd, _nome: p.nome });
@@ -1049,13 +1062,11 @@ window.reconciliarIndicacoes = async function() {
                     
                     const atsDiferentesMulti = new Set(atsComInd.map(a => (a.indicacao||'').trim().toUpperCase()));
                     
-                    const exemplos = atsComInd.slice(0, 3).map(a => a.nome_paciente || 'Sem Nome').join(', ');
-                    
                     if(atsDiferentesMulti.size > 1) {
-                         situacao = `Munícipe s/ indicação, mas tem atendimentos em várias lideranças diferentes: ${Array.from(atsDiferentesMulti).join(', ')}. <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
+                         situacao = `Munícipe s/ indicação, mas tem atendimentos em várias lideranças diferentes: ${Array.from(atsDiferentesMulti).join(', ')}.`;
                          acao = `<span class="text-amber-600 font-bold">Vincular Munícipe a <b>${finalInd}</b> (a mais recente) e forçar todos os atendimentos para <b>${finalInd}</b></span>`;
                     } else {
-                         situacao = `Munícipe s/ indicação, mas tem atendimento(s) da liderança <b>${finalInd}</b>. <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
+                         situacao = `Munícipe s/ indicação, mas tem atendimento(s) da liderança <b>${finalInd}</b>.`;
                          acao = `<span class="text-blue-600 font-bold">Vincular Munícipe a <b>${finalInd}</b></span> e alinhar atendimentos.`;
                     }
                     
