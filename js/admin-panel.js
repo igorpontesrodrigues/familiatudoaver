@@ -1033,7 +1033,8 @@ window.reconciliarIndicacoes = async function() {
                 // Cenário 1: Munícipe JÁ TEM indicação. Ele é a fonte da verdade.
                 let atsDiferentes = ats.filter(a => (a.indicacao || '').trim().toUpperCase() !== pInd);
                 if(atsDiferentes.length > 0) {
-                    situacao = `Munícipe é da liderança <b>${pInd}</b>, mas tem ${atsDiferentes.length} atendimento(s) com outra indicação (ou sem).`;
+                    const exemplos = atsDiferentes.slice(0, 3).map(a => a.nome_paciente || 'Sem Nome').join(', ');
+                    situacao = `Munícipe é da liderança <b>${pInd}</b>, mas tem ${atsDiferentes.length} atendimento(s) com outra indicação (ou sem). <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
                     acao = `<span class="text-teal-600 font-bold">Atualizar ${atsDiferentes.length} atendimento(s) para ${pInd}</span>`;
                     atsDiferentes.forEach(a => {
                         batchAtendimentos.push({ id: a.id, indicacao: pInd, _nome: p.nome });
@@ -1048,11 +1049,13 @@ window.reconciliarIndicacoes = async function() {
                     
                     const atsDiferentesMulti = new Set(atsComInd.map(a => (a.indicacao||'').trim().toUpperCase()));
                     
+                    const exemplos = atsComInd.slice(0, 3).map(a => a.nome_paciente || 'Sem Nome').join(', ');
+                    
                     if(atsDiferentesMulti.size > 1) {
-                         situacao = `Munícipe s/ indicação, mas tem atendimentos em várias lideranças diferentes: ${Array.from(atsDiferentesMulti).join(', ')}.`;
+                         situacao = `Munícipe s/ indicação, mas tem atendimentos em várias lideranças diferentes: ${Array.from(atsDiferentesMulti).join(', ')}. <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
                          acao = `<span class="text-amber-600 font-bold">Vincular Munícipe a <b>${finalInd}</b> (a mais recente) e forçar todos os atendimentos para <b>${finalInd}</b></span>`;
                     } else {
-                         situacao = `Munícipe s/ indicação, mas tem atendimento(s) da liderança <b>${finalInd}</b>.`;
+                         situacao = `Munícipe s/ indicação, mas tem atendimento(s) da liderança <b>${finalInd}</b>. <br><span class="text-xs text-slate-400">Ex: ${exemplos}</span>`;
                          acao = `<span class="text-blue-600 font-bold">Vincular Munícipe a <b>${finalInd}</b></span> e alinhar atendimentos.`;
                     }
                     
