@@ -163,20 +163,20 @@ window.analisarDuplicados = function(nomeNorm) {
         { key: 'observacoes', label: 'Observações' }
     ];
 
-    let html = \`
+    let html = `
         <div class="grid grid-cols-12 gap-4 font-bold text-slate-500 text-xs uppercase tracking-wider mb-2 px-4">
             <div class="col-span-3">Campo</div>
             <div class="col-span-4 flex items-center gap-2 text-emerald-700">
                 <i data-lucide="check-circle-2" class="w-4 h-4"></i> Principal (Destino)
-                <span class="font-mono text-[10px] bg-emerald-100 px-1 rounded">\${principal.id}</span>
+                <span class="font-mono text-[10px] bg-emerald-100 px-1 rounded">${principal.id}</span>
             </div>
             <div class="col-span-1 text-center">Ação</div>
             <div class="col-span-4 flex items-center gap-2 text-rose-700">
                 <i data-lucide="trash-2" class="w-4 h-4"></i> Secundário (Será apagado)
-                <span class="font-mono text-[10px] bg-rose-100 px-1 rounded">\${secundario.id}</span>
+                <span class="font-mono text-[10px] bg-rose-100 px-1 rounded">${secundario.id}</span>
             </div>
         </div>
-    \`;
+    `;
 
     campos.forEach(campo => {
         const valP = (principal[campo.key] || '').trim();
@@ -186,20 +186,20 @@ window.analisarDuplicados = function(nomeNorm) {
         
         if (saoIguais) {
             // Mostrar bloqueado
-            html += \`
+            html += `
                 <div class="grid grid-cols-12 gap-4 items-center bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 opacity-60">
                     <div class="col-span-3 font-semibold text-slate-700 dark:text-slate-300 text-sm flex items-center gap-2">
-                        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> \${campo.label}
+                        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> ${campo.label}
                     </div>
-                    <div class="col-span-4 text-sm font-medium break-words text-slate-600">\${valP || '<span class="text-slate-400 italic">Vazio</span>'}</div>
+                    <div class="col-span-4 text-sm font-medium break-words text-slate-600">${valP || '<span class="text-slate-400 italic">Vazio</span>'}</div>
                     <div class="col-span-1 flex justify-center">
                         <div class="bg-slate-200 dark:bg-slate-700 rounded-full p-1"><i data-lucide="equal" class="w-4 h-4 text-slate-400"></i></div>
                     </div>
-                    <div class="col-span-4 text-sm font-medium break-words text-slate-600">\${valS || '<span class="text-slate-400 italic">Vazio</span>'}</div>
+                    <div class="col-span-4 text-sm font-medium break-words text-slate-600">${valS || '<span class="text-slate-400 italic">Vazio</span>'}</div>
                     
-                    <input type="hidden" name="merge_\${campo.key}" value="P">
+                    <input type="hidden" name="merge_${campo.key}" value="P">
                 </div>
-            \`;
+            `;
         } else {
             // Mostrar escolha
             // Se um for vazio e o outro tiver dado, vamos sugerir o que tem dado
@@ -210,29 +210,29 @@ window.analisarDuplicados = function(nomeNorm) {
                 checkedS = "checked";
             }
 
-            html += \`
+            html += `
                 <div class="grid grid-cols-12 gap-4 items-center bg-white dark:bg-slate-800 p-4 rounded-xl border-2 border-blue-100 dark:border-blue-900 shadow-sm relative overflow-hidden group">
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-400"></div>
                     <div class="col-span-3 font-bold text-blue-900 dark:text-blue-100 text-sm">
-                        \${campo.label}
+                        ${campo.label}
                     </div>
                     <div class="col-span-4">
-                        <label class="flex items-start gap-3 p-3 rounded-lg border \${checkedP ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100'} cursor-pointer transition" onclick="document.querySelectorAll('input[name=merge_\${campo.key}]').forEach(el=>el.closest('label').className='flex items-start gap-3 p-3 rounded-lg border bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100 cursor-pointer transition'); this.className='flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 cursor-pointer transition';">
-                            <input type="radio" name="merge_\${campo.key}" value="P" class="mt-1 w-4 h-4 text-blue-600" \${checkedP}>
-                            <span class="text-sm font-medium break-words \${!valP ? 'text-slate-400 italic' : 'text-slate-800 dark:text-slate-200'}">\${valP || 'Vazio'}</span>
+                        <label class="flex items-start gap-3 p-3 rounded-lg border ${checkedP ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100'} cursor-pointer transition" onclick="document.querySelectorAll('input[name=merge_${campo.key}]').forEach(el=>el.closest('label').className='flex items-start gap-3 p-3 rounded-lg border bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100 cursor-pointer transition'); this.className='flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 cursor-pointer transition';">
+                            <input type="radio" name="merge_${campo.key}" value="P" class="mt-1 w-4 h-4 text-blue-600" ${checkedP}>
+                            <span class="text-sm font-medium break-words ${!valP ? 'text-slate-400 italic' : 'text-slate-800 dark:text-slate-200'}">${valP || 'Vazio'}</span>
                         </label>
                     </div>
                     <div class="col-span-1 flex justify-center text-slate-300">
                         <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
                     </div>
                     <div class="col-span-4">
-                        <label class="flex items-start gap-3 p-3 rounded-lg border \${checkedS ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100'} cursor-pointer transition" onclick="document.querySelectorAll('input[name=merge_\${campo.key}]').forEach(el=>el.closest('label').className='flex items-start gap-3 p-3 rounded-lg border bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100 cursor-pointer transition'); this.className='flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 cursor-pointer transition';">
-                            <input type="radio" name="merge_\${campo.key}" value="S" class="mt-1 w-4 h-4 text-blue-600" \${checkedS}>
-                            <span class="text-sm font-medium break-words \${!valS ? 'text-slate-400 italic' : 'text-slate-800 dark:text-slate-200'}">\${valS || 'Vazio'}</span>
+                        <label class="flex items-start gap-3 p-3 rounded-lg border ${checkedS ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100'} cursor-pointer transition" onclick="document.querySelectorAll('input[name=merge_${campo.key}]').forEach(el=>el.closest('label').className='flex items-start gap-3 p-3 rounded-lg border bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 hover:bg-slate-100 cursor-pointer transition'); this.className='flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700 cursor-pointer transition';">
+                            <input type="radio" name="merge_${campo.key}" value="S" class="mt-1 w-4 h-4 text-blue-600" ${checkedS}>
+                            <span class="text-sm font-medium break-words ${!valS ? 'text-slate-400 italic' : 'text-slate-800 dark:text-slate-200'}">${valS || 'Vazio'}</span>
                         </label>
                     </div>
                 </div>
-            \`;
+            `;
         }
     });
 
@@ -242,7 +242,7 @@ window.analisarDuplicados = function(nomeNorm) {
     window.getDocs(window.query(window.collection(window.db, "atendimentos"), window.where("id_paciente", "==", secundario.id)))
         .then(snap => {
             const qtd = snap.size;
-            document.getElementById('merge-atendimentos-info').innerText = \`\${qtd} atendimento(s) do secundário serão transferidos\`;
+            document.getElementById('merge-atendimentos-info').innerText = `${qtd} atendimento(s) do secundário serão transferidos`;
         });
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -252,12 +252,12 @@ window.confirmarMesclagemMunicipe = async function() {
     if (!window.duplaAtualMesclagem) return;
     const { principal, secundario } = window.duplaAtualMesclagem;
 
-    const conf = confirm(\`Atenção: Esta ação NÃO PODE SER DESFEITA.\\n\\nO cadastro principal (ID: \${principal.id}) será atualizado com as opções selecionadas.\\nOs atendimentos do cadastro secundário (ID: \${secundario.id}) serão transferidos para o principal.\\nO cadastro secundário será APAGADO permanentemente.\\n\\nDeseja continuar?\`);
+    const conf = confirm(`Atenção: Esta ação NÃO PODE SER DESFEITA.\\n\\nO cadastro principal (ID: ${principal.id}) será atualizado com as opções selecionadas.\\nOs atendimentos do cadastro secundário (ID: ${secundario.id}) serão transferidos para o principal.\\nO cadastro secundário será APAGADO permanentemente.\\n\\nDeseja continuar?`);
     if (!conf) return;
 
     const btn = document.getElementById('btn-confirmar-mesclagem');
     const originalText = btn.innerHTML;
-    btn.innerHTML = \`<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Processando...\`;
+    btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Processando...`;
     btn.disabled = true;
 
     try {
@@ -302,7 +302,7 @@ window.confirmarMesclagemMunicipe = async function() {
         await window.deleteDoc(window.doc(window.db, "pacientes", secundario.id));
 
         // Sucesso!
-        alert(\`Mesclagem concluída com sucesso!\\n\${atSnap.size} atendimentos transferidos.\`);
+        alert(`Mesclagem concluída com sucesso!\\n${atSnap.size} atendimentos transferidos.`);
         
         // Fechar modal de comparação
         document.getElementById('modal-comparar-municipes').classList.add('hidden');
