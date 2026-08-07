@@ -252,7 +252,7 @@ window.confirmarMesclagemMunicipe = async function() {
     if (!window.duplaAtualMesclagem) return;
     const { principal, secundario } = window.duplaAtualMesclagem;
 
-    const conf = confirm(`Atenção: Esta ação NÃO PODE SER DESFEITA.\\n\\nO cadastro principal (ID: ${principal.id}) será atualizado com as opções selecionadas.\\nOs atendimentos do cadastro secundário (ID: ${secundario.id}) serão transferidos para o principal.\\nO cadastro secundário será APAGADO permanentemente.\\n\\nDeseja continuar?`);
+    const conf = await window.showModalConfirm(`Atenção: Esta ação NÃO PODE SER DESFEITA.\n\nO cadastro principal (ID: ${principal.id}) será atualizado com as opções selecionadas.\nOs atendimentos do cadastro secundário (ID: ${secundario.id}) serão transferidos para o principal.\nO cadastro secundário será APAGADO permanentemente.\n\nDeseja continuar?`);
     if (!conf) return;
 
     const btn = document.getElementById('btn-confirmar-mesclagem');
@@ -302,7 +302,7 @@ window.confirmarMesclagemMunicipe = async function() {
         await window.deleteDoc(window.doc(window.db, "pacientes", secundario.id));
 
         // Sucesso!
-        alert(`Mesclagem concluída com sucesso!\\n${atSnap.size} atendimentos transferidos.`);
+        await window.showModalAlert(`Mesclagem concluída com sucesso!\n${atSnap.size} atendimentos transferidos.`);
         
         // Fechar modal de comparação
         document.getElementById('modal-comparar-municipes').classList.add('hidden');
@@ -313,7 +313,7 @@ window.confirmarMesclagemMunicipe = async function() {
 
     } catch (e) {
         console.error("Erro na mesclagem:", e);
-        alert("Ocorreu um erro durante a mesclagem: " + e.message);
+        await window.showModalAlert("Ocorreu um erro durante a mesclagem: " + e.message);
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
