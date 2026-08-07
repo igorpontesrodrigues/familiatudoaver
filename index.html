@@ -1192,6 +1192,12 @@
                 <div id="resultado-reconciliacao" class="hidden text-xs mb-3 p-3 rounded-lg bg-white border border-teal-100 text-teal-800 font-mono max-h-32 overflow-y-auto"></div>
                 <button onclick="if(window.reconciliarIndicacoes) reconciliarIndicacoes();" id="btn-reconciliar" class="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition text-sm flex items-center justify-center gap-2 shadow-sm"><i data-lucide="git-merge" class="w-4 h-4"></i> Reconciliar Agora</button>
             </div>
+            
+            <div class="p-5 border border-blue-100 bg-blue-50 rounded-xl h-full flex flex-col">
+                <h4 class="font-bold text-blue-800 text-sm mb-2">Mesclar Munícipes Duplicados</h4>
+                <p class="text-xs text-blue-600 mb-4 flex-1">Encontra cadastros com o mesmo nome (um com CPF e outro sem) e permite mesclar os dados e os atendimentos em um único cadastro.</p>
+                <button onclick="if(window.abrirModalMesclagem) window.abrirModalMesclagem();" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition text-sm flex items-center justify-center gap-2 shadow-sm"><i data-lucide="users" class="w-4 h-4"></i> Procurar Duplicados</button>
+            </div>
         </div>
     </div>
 </div>
@@ -2336,6 +2342,7 @@
             'js/ui-tables.js',
             'js/admin-panel.js',
             'js/admin-docs-audit.js',
+            'js/admin-merge.js',
             'js/charts.js',
             'js/api.js',
             'js/alertas.js',
